@@ -76,6 +76,6 @@ And if time permits:
 
 The [Lightning Development Kit (LDK)](https://lightningdevkit.org) will be used for this.
 
-## Workshop 3: Other Lightning`` libraries and Lightning Service Provider integration
+## Workshop 3: Other Lightning libraries and Lightning Service Provider integration
 
 In this workshop, some other ways to embed a Lightning wallet, like [Breez SDK](https://sdk-doc.breez.technology/), will be shown and we will improve the UX (User eXperience) of the app by integrating with [Lightning Service Providers (LSP's)](https://github.com/BitcoinAndLightningLayerSpecs/lsp).
