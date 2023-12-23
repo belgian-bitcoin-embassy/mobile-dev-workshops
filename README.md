@@ -20,11 +20,14 @@ We think the workshops can be fun and of value to both developers that want to l
 ## ⚠️ To do before the workshop
 
 As the workshop will be hands-on, it is required to install some software before attending the workshop and make sure it is working correctly.
+
 Due to time constraints, we will not be able to help with installation issues during the workshop. If you have any problems, please reach out to us beforehand.
 
 ### Install an IDE
 
-The instructor of the workshops will be using [Visual Studio Code](https://code.visualstudio.com/), so it might be easier to follow along to also use it, but any IDE that supports Flutter development will work.
+The instructor of the workshops will be using [Visual Studio Code](https://code.visualstudio.com/), so it might be easier to follow along if you use it too, but any IDE that supports Flutter development will work.
+
+If you install Visual Studio Code, make sure to also install the [Flutter extension](https://marketplace.visualstudio.com/items?itemName=Dart-Code.flutter).
 
 ### Install Flutter
 
@@ -41,7 +44,7 @@ Polar is a Bitcoin and Lightning Network development tool that makes it easy to 
 
 Download from https://lightningpolar.com/ and follow the installation instructions for your operating system.
 
-## Workshop 1: App setup and Bitcoin on-chain wallet
+## Workshop 1: Project setup and Bitcoin on-chain wallet
 
 In this workshop, we will set up a Flutter project and implement the basic functionalities of a Bitcoin on-chain wallet, like:
 
@@ -57,6 +60,29 @@ And if time permits:
 - Importing an existing wallet
 
 We will use the [Bitcoin Development Kit (BDK)](https://bitcoindevkit.org) to implement this functionality.
+
+### 0. App setup
+
+#### App creation
+
+Start by creating a new Flutter project using the `flutter create` command. You can choose any name for the project, but for the sake of this workshop, we will use `bitcoin_flutter_app`, so run `flutter create bitcoin_flutter_app` where you want to create the project.
+
+From the created project folder, you should now be able to run the app on a connected device or emulator using `flutter run`.
+If an app with a counter button is shown, everything is working correctly.
+
+We will only be building for Android and iOS during this workshop, so you can remove the other platforms' folders from the project, manually or by running the command `rm -rf linux macos web windows`.
+
+#### `main.dart` file
+
+The `main.dart` file is the entry point of the app and is where we will start. It is located in the `lib` folder of the project.
+As you see, there is already some code in there for the counter app that was created by default. We will remove the MyHomePage widget as we will create our own widget for the home screen of the app.
+
+In the MyApp widget, we will change the title to "Bitcoin Flutter App", you can change the color to our beloved Orange color and the home to our own widget that we will create in the next step and will call HomeScreen.
+
+#### Home feature
+
+We will create a folder for all features of the app, called `features`. We can consider having a Home to be a feature and thus create a folder for it in the features folder, called `home`, and a file `home_screen.dart` inside it for the view of our home page. For now, we just create a simple view saying 'Home Screen' in the center of the screen.
+In the next steps we will add the layout and components for our Bitcoin wallet to the Home Screen.
 
 ## Workshop 2: Lightning Network wallet
 
