@@ -17,7 +17,7 @@ Anyone can assist, but experience in software development is highly recommended,
 Experience with mobile development or Bitcoin and Lightning is NOT required.
 We think the workshops can be fun and of value to both developers that want to learn about Bitcoin and the Lightning Network, as well as Bitcoin and Lightning developers that want to learn about mobile development.
 
-## To do before the workshop
+## ⚠️ To do before the workshop
 
 As the workshop will be hands-on, it is required to install some software before attending the workshop and make sure it is working correctly.
 Due to time constraints, we will not be able to help with installation issues during the workshop. If you have any problems, please reach out to us beforehand.
