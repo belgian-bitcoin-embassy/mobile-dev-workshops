@@ -12,7 +12,7 @@ The exact dates and locations of the workshops will be announced later.
 
 ## Prior knowledge
 
-Experience with programming is required, as explaining basics of programming will take us too far from the main topic.
+Anyone can assist, but experience in software development is highly recommended, as explaining basics of programming will take us too far from the main topic.
 
 Experience with mobile development or Bitcoin and Lightning is NOT required.
 We think the workshops can be fun and of value to both developers that want to learn about Bitcoin and the Lightning Network, as well as Bitcoin and Lightning developers that want to learn about mobile development.
@@ -24,14 +24,14 @@ Due to time constraints, we will not be able to help with installation issues du
 
 ### Install an IDE
 
-The instructor of the workshops will be using Visual Studio Code, so it might be easier to follow along to also use Visual Studio Code, but any IDE that supports Flutter development will work.
+The instructor of the workshops will be using [Visual Studio Code](https://code.visualstudio.com/), so it might be easier to follow along to also use it, but any IDE that supports Flutter development will work.
 
 ### Install Flutter
 
 The mobile development framework used will be Flutter, as to easily build applications for both Android and iOS and to make use of existing Bitcoin and Lightning libraries.
 
 Following the [official installation instructions](https://flutter.dev/docs/get-started/install), install Flutter for your operating system.
-The app will be developed to run on both Android and iOS, but for the workshop, it is sufficient to follow the instructions for just one of the two. If you would like to run the app on both Android and iOS, you will need to install Flutter for both app types.
+The app will be developed to run on both Android and iOS, so if you would like to run the app on both Android and iOS, you will need to install Flutter for both app types. To just run the app during the workshop, it is sufficient to follow the instructions for just one of the two.
 
 Make sure that running `flutter doctor` in a terminal shows no errors, as described in the installation instructions.
 
@@ -76,6 +76,6 @@ And if time permits:
 
 The [Lightning Development Kit (LDK)](https://lightningdevkit.org) will be used for this.
 
-## Workshop 3: Other Lightning libraries and Lightning Service Provider integration
+## Workshop 3: Other Lightning`` libraries and Lightning Service Provider integration
 
 In this workshop, some other ways to embed a Lightning wallet, like [Breez SDK](https://sdk-doc.breez.technology/), will be shown and we will improve the UX (User eXperience) of the app by integrating with [Lightning Service Providers (LSP's)](https://github.com/BitcoinAndLightningLayerSpecs/lsp).
