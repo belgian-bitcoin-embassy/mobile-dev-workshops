@@ -82,13 +82,66 @@ In the MyApp widget, we will change the title to "Bitcoin Flutter App", you can 
 #### Home feature
 
 We will create a folder for all features of the app, called `features`. We can consider having a Home to be a feature and thus create a folder for it in the features folder, called `home`, and a file `home_screen.dart` inside it for the view of our home page. For now, we just create a simple view saying 'Home Screen' in the center of the screen.
-In the next steps we will add the layout and components for our Bitcoin wallet to the Home Screen.
+
+```dart
+import 'package:flutter/material.dart';
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Text('Home Screen'),
+      ),
+    );
+  }
+}
+```
+
+In the next steps we will add the initial layout and components for our Bitcoin wallet to the Home Screen.
+
+### 1. Home layout
+
+Our Bitcoin wallet will have a simple, but scalable, layout with an app bar, an horizontal list of balances to add Lightning or other balances in the future, a list of transactions and a floating button to send and receive Bitcoin.
+
+#### App bar
+
+The app bar will just have a menu drawer icon on the right that in the future can be used to open a drawer with some options, like settings, seed backup, etc.
+
+Just add it with the following two lines in the Scaffold widget of the HomeScreen:
+
+```dart
+// In the Scaffold widget ...
+    appBar: AppBar(),
+    endDrawer: const Drawer(),
+// ...
+```
+
+#### Balances
+
+We will use a horizontal list of balances of the wallets created in the app, so that we can easily add more wallets in the future, like Lightning, etc. For now, we will only have an on-chain Bitcoin balance, but we will add a Lightning balance in the next workshop.
+
+Use a ListView to display the balances horizontally.
+
+- add assets folder and add it to pubspec.yaml
+- Install svg package flutter_svg: flutter pub add flutter_svg
+
+#### Transactions
+
+ListView of transactions, with a ListTile for each transaction. The ListTile will have a leading widget with the day and month, a title, and the amount.
+
+#### Floating button
+
+The floating button will open a bottom sheet with possible actions. For now, we will only have the option to receive bitcoin, scan a QR and send bitcoin.
 
 ## Workshop 2: Lightning Network wallet
 
 In this workshop, we will add Lightning node functionality to the app like:
 
 - Displaying the Lightning balance
+- Toggle between values in BTC and in Satoshis
 - Funding and opening a Lightning channel
 - Generating a Lightning invoice
 - Paying different types of payment requests (BOLT11, LNURL, Lightning Address, node public key, etc.)
