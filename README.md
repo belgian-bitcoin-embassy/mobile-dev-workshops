@@ -82,13 +82,414 @@ In the MyApp widget, we will change the title to "Bitcoin Flutter App", you can 
 #### Home feature
 
 We will create a folder for all features of the app, called `features`. We can consider having a Home to be a feature and thus create a folder for it in the features folder, called `home`, and a file `home_screen.dart` inside it for the view of our home page. For now, we just create a simple view saying 'Home Screen' in the center of the screen.
-In the next steps we will add the layout and components for our Bitcoin wallet to the Home Screen.
+
+```dart
+import 'package:flutter/material.dart';
+
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: Text('Home Screen'),
+      ),
+    );
+  }
+}
+```
+
+In the next steps we will add the initial layout and components for our Bitcoin wallet to the Home Screen.
+
+### 1. Home layout
+
+Our Bitcoin wallet will have a simple, but scalable, layout with an app bar, an horizontal list of balances to add Lightning or other balances in the future, a list of transactions and a floating button to send and receive Bitcoin.
+
+#### App bar
+
+The app bar will just have a menu drawer icon on the right that in the future can be used to open a drawer with some options, like settings, seed backup, etc.
+
+Just add it with the following two lines in the Scaffold widget of the HomeScreen:
+
+```dart
+// In the Scaffold widget ...
+    appBar: AppBar(),
+    endDrawer: const Drawer(),
+// ...
+```
+
+#### Wallet balances
+
+We will use a horizontal list of balances of the wallets created in the app, so that we can easily add more wallets in the future, like Lightning, etc. For now, we will only have an on-chain Bitcoin wallet, but we will add a Lightning balance in the next workshop.
+
+In the `HomeScreen` widget, change the complete body for a `SingeChildScrollView` with a `Column` inside it. This will allow us to add different components one above the other and scroll if the screen is not big enough to show all of them.
+
+```dart
+// In the Scaffold widget ...
+    body: SingleChildScrollView(
+      child: Column(
+        children: [
+          // ...
+        ],
+      ),
+    ),
+```
+
+The first component we will add is the list of balances. We will create a new widget for it, called `WalletCardsList`, and add it to the `Column` widget. The list will be a horizontal list, so it can grow unlimitedly and be scrolled horizontally if more wallets are added in the future.
+To constrain it vertically, we will wrap it in a `SizedBox` widget with a fixed height.
+The homescreen now looks like this:
+
+```dart
+class HomeScreen extends StatelessWidget {
+  const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(),
+      endDrawer: const Drawer(),
+      body: const SingleChildScrollView(
+        child: Column(
+          children: [
+            SizedBox(
+              height: kSpacingUnit * 24,
+              child: WalletCardsList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+Before we create the `WalletCardsList` itself, let's create the items that will be displayed in the list. We will create a new folder for widgets to separate them from the screens, as they could possibly be reused in other screens in the future. Inside the `lib` folder, create a new folder called `widgets` and inside it a new folder called `wallets` and three files inside it: `add_new_wallet_card.dart`, `wallet_balance_card.dart` and `wallet_cards_list.dart`.
+
+The `add_new_wallet_card.dart` file will contain a widget that will be displayed in the list to add a new wallet. For now, it will just be a card with a plus icon and a label in the center. We will use the `InkWell` widget to make it tappable:
+
+```dart
+class AddNewWalletCard extends StatelessWidget {
+  const AddNewWalletCard({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () {
+          // Todo: Navigate to add a new wallet
+          print('Add a new wallet');
+        },
+        child: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add,
+            ),
+            Text('Add a new wallet'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+The `wallet_balance_card.dart` file will contain a widget that will be displayed in the list for each wallet. For now, it will just be a card with an icon indicating the type of wallet, a label and the balance underneath. It will also have a closing button in the upper corner to easily delete the wallet just for testing now. To be able to show the icon, we will use the `SvgPicture` widget from the `flutter_svg` package, so make sure to do `flutter pub add flutter_svg` from the command line. The specific icons will be placed in a folder in the root of the project, called `assets`, and added to the `pubspec.yaml` file to be able to use them in the app. The `wallet_balance_card.dart` widget will now look like this:
+
+```dart
+import 'package:bitcoin_flutter_app/constants.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+
+class WalletBalanceCard extends StatelessWidget {
+  const WalletBalanceCard({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(kSpacingUnit),
+      ),
+      clipBehavior: Clip.hardEdge,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(kSpacingUnit),
+        onTap: () {
+          // Todo: Navigate to wallet
+          print('Go to wallet');
+        },
+        child: Stack(
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: kSpacingUnit * 12,
+                  width: double.infinity,
+                  color: theme.colorScheme.primaryContainer,
+                  child: SvgPicture.asset(
+                    'assets/icons/bitcoin_savings.svg',
+                    fit: BoxFit.none, // Don't scale the SVG, keep it at its original size
+                  ),
+                ),
+                // Expanded to take up all the space of the height the list is constrained to
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(kSpacingUnit),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Savings wallet',
+                          style: theme.textTheme.labelMedium,
+                        ),
+                        const SizedBox(height: kSpacingUnit),
+                        Text(
+                          '0.00000000 BTC',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              ],
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: CloseButton(
+                onPressed: () {
+                  print('Delete wallet');
+                },
+                style: ButtonStyle(
+                  padding: MaterialStateProperty.all(
+                    EdgeInsets.zero,
+                  ),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  iconSize: MaterialStateProperty.all(
+                    kSpacingUnit * 2,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+Now we can create the list itself in the `wallet_cards_list.dart` file. Just create a `ListView` with a `ScrollPhysics` to make it scrollable horizontally and add the two widgets we just created to it. The `WalletCardsList` widget will now look like this:
+
+```dart
+class WalletCardsList extends StatelessWidget {
+  const WalletCardsList({
+    super.key,
+  });
+
+  final count = 2;
+
+  @override
+  Widget build(context) {
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      itemCount: count,
+      itemExtent: kSpacingUnit * 20,
+      itemBuilder: (BuildContext context, int index) {
+        if (index == count - 1) {
+          return const AddNewWalletCard();
+        } else {
+          return const WalletBalanceCard();
+        }
+      },
+    );
+  }
+}
+```
+
+You can play with the count variable to see how the list grows horizontally and the last item is always the add new wallet card.
+
+#### Transaction history
+
+To show the transaction history, we will create a new widget called `TransactionsList` that vertically lists `TransactionListItems` for every transaction that was done with the wallet. Place both in a new folder `lib/widgets/transactions`. The `TransactionListItem` will just be a List tile with a leading icon to show the direction of the transaction, a description and the time of the transaction and an amount:
+
+```dart
+class TransactionListItem extends StatelessWidget {
+  const TransactionListItem({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListTile(
+      leading: const CircleAvatar(
+        child: Icon(Icons.arrow_downward),
+      ),
+      title: Text('Received funds', style: theme.textTheme.titleMedium),
+      subtitle: Text('14-02-2021 12:00', style: theme.textTheme.bodySmall),
+      trailing: Text('+0.00000001 BTC', style: theme.textTheme.bodyMedium),
+    );
+  }
+}
+```
+
+The `TransactionsList` will be a `ListView` with scrolling disabled and `shrinkWrap` on true, since it should be placed in the Column of an already scrollable parent with infite height, the `SingleChildScrollView` of the `HomeScreen`. The `TransactionsList` widget will now look like this:
+
+```dart
+class TransactionsList extends StatelessWidget {
+  const TransactionsList({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Transactions',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+        ),
+        ListView.builder(
+          shrinkWrap:
+              true, // To set constraints on the ListView in an infinite height parent (SingleChildScrollView)
+          physics:
+              const NeverScrollableScrollPhysics(), // Scrolling is handled by the parent (SingleChildScrollView)
+          itemBuilder: (ctx, index) {
+            return const TransactionListItem();
+          },
+          itemCount: 10,
+        ),
+      ],
+    );
+  }
+}
+```
+
+#### Floating button
+
+Now for the actions like receiving and sending we would want to do with a Bitcoin wallet, we will add a floating button that opens a bottom sheet modal with possible actions. For now, we will only add the options to receive and send bitcoin.
+
+To add a floating button, just add the following to the `Scaffold` widget:
+
+```dart
+// HomeScreen Scaffold widget ...
+    floatingActionButton: FloatingActionButton(
+        onPressed: () => showModalBottomSheet(
+          context: context,
+          builder: (context) => const WalletActionsBottomSheet(),
+        ),
+        child: SvgPicture.asset(
+          'assets/icons/in_out_arrows.svg',
+        ),
+    ),
+// ...
+```
+
+And add the `WalletActionsBottomSheet` widget to the `lib/widgets/wallets` folder:
+
+```dart
+class WalletActionsBottomSheet extends StatelessWidget {
+  const WalletActionsBottomSheet({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(kSpacingUnit * 3),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Wallet actions',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              IconLabelStackedButton(
+                icon: Icons.arrow_downward,
+                label: 'Receive funds',
+                onPressed: () {
+                  print('Receive funds');
+                },
+              ),
+              IconLabelStackedButton(
+                icon: Icons.arrow_upward,
+                label: 'Send funds',
+                onPressed: () {
+                  print('Send funds');
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+```
+
+This widget adds a title and two buttons to the bottom sheet modal. The buttons are created with a custom widget called `IconLabelStackedButton` that we will create in the `lib/widgets/buttons` folder. This is another way to organize widgets, by type, instead of by feature. The `IconLabelStackedButton` widget as it name says will show an icon and a label stacked vertically. It will also have an `onPressed` callback to be able to do something when the button is pressed. The widget will look like this:
+
+```dart
+class IconLabelStackedButton extends StatelessWidget {
+  const IconLabelStackedButton({
+    Key? key,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  }) : super(key: key);
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      customBorder: const CircleBorder(),
+      onTap: onPressed,
+      child: Padding(
+        padding: const EdgeInsets.all(kSpacingUnit * 5),
+        child: Column(
+          children: [
+            CircleAvatar(
+              child: Icon(icon),
+            ),
+            const SizedBox(height: kSpacingUnit),
+            Text(label),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+#### Wrap up
+
+With this, we have the basic layout of our Bitcoin wallet app. It should look something like this now:
+
+![Screenshot 2024-01-14 at 22 27 56](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/53016ef4-fd4e-4738-a002-fc745e413b6d)
+
+![Screenshot 2024-01-14 at 22 28 10](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/a6c9242a-af0f-489d-a911-ce4b3bbfd7d5)
+
+All data is hardcoded for now, but in the next steps we will add the functionality to generate a new wallet and display the balance and transactions.
+
+### 2. Wallet generation
 
 ## Workshop 2: Lightning Network wallet
 
 In this workshop, we will add Lightning node functionality to the app like:
 
 - Displaying the Lightning balance
+- Toggle between values in BTC and in Satoshis
 - Funding and opening a Lightning channel
 - Generating a Lightning invoice
 - Paying different types of payment requests (BOLT11, LNURL, Lightning Address, node public key, etc.)
@@ -105,3 +506,7 @@ The [Lightning Development Kit (LDK)](https://lightningdevkit.org) will be used 
 ## Workshop 3: Other Lightning libraries and Lightning Service Provider integration
 
 In this workshop, some other ways to embed a Lightning wallet, like [Breez SDK](https://sdk-doc.breez.technology/), will be shown and we will improve the UX (User eXperience) of the app by integrating with [Lightning Service Providers (LSP's)](https://github.com/BitcoinAndLightningLayerSpecs/lsp).
+
+```
+
+```
