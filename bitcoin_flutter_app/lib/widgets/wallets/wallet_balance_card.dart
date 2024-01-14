@@ -31,9 +31,11 @@ class WalletBalanceCard extends StatelessWidget {
                   color: theme.colorScheme.primaryContainer,
                   child: SvgPicture.asset(
                     'assets/icons/bitcoin_savings.svg',
-                    fit: BoxFit.scaleDown,
+                    fit: BoxFit
+                        .none, // Don't scale the SVG, keep it at its original size
                   ),
                 ),
+                // Expanded to take up all the space of the height the list is constrained to
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(kSpacingUnit),

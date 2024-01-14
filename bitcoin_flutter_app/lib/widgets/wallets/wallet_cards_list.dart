@@ -3,8 +3,8 @@ import 'package:bitcoin_flutter_app/widgets/wallets/add_new_wallet_card.dart';
 import 'package:bitcoin_flutter_app/widgets/wallets/wallet_balance_card.dart';
 import 'package:flutter/material.dart';
 
-class ListOfWalletCards extends StatelessWidget {
-  const ListOfWalletCards({
+class WalletCardsList extends StatelessWidget {
+  const WalletCardsList({
     super.key,
   });
 
