@@ -484,6 +484,48 @@ All data is hardcoded for now, but in the next steps we will add the functionali
 
 ### 2. Wallet generation
 
+To generate a new wallet, we will use the [Bitcoin Development Kit (BDK)](https://bitcoindevkit.org). It is a library that provides a Rust API with various Bitcoin functionalities, like generating a new wallet, creating transactions, etc. A Flutter package exists that wraps the Rust API in a Dart API, so that we can use it in our Flutter app. The package is called [bdk_flutter](https://github.com/LtbLightning/bdk-flutter) and we can install it by running `flutter pub add bdk_flutter` from the command line.
+
+#### BDK setup
+
+Make sure the Minimum SDK version in the `android/app/build.gradle` file is at least 23, as the BDK library requires it. For iOS, the minimum version should be 12.0, so make sure the
+podfile in the `ios` folder has the following:
+
+```ruby
+platform :ios, '12.0'
+```
+
+And the `ios/Runner/Info.plist` file has the following:
+
+```xml
+<key>MinimumOSVersion</key>
+<string>12.0</string>
+```
+
+Then run `cd ios && pod install && cd ..` from the command line for the changes to take effect.
+
+#### Generate a new wallet
+
+To start easy, let's just use the bdk package to generate a BIP39 seed phrase, also know as recovery phrase or mnemonic, when we press the add new wallet button and just print it out for now.
+
+Let's go to the `AddNewWalletCard` widget and change the `onTap` callback of the `InkWell` widget to generate a new wallet and print the seed phrase to the console so we can see that it works:
+
+```dart
+// AddNewWalletCard widget ...
+    onTap: () async {
+        print('Add a new wallet');
+        final mnemonic = await Mnemonic.create(WordCount.Words12);
+        print('Seed phrase generated: ${mnemonic.asString()}');
+    },
+// ...
+```
+
+If you run the app now and press the add new wallet card, you should see a new seed phrase printed to the console every time you press it.
+
+#### Securely storing the wallet
+
+#### Displaying the balance
+
 ## Workshop 2: Lightning Network wallet
 
 In this workshop, we will add Lightning node functionality to the app like:

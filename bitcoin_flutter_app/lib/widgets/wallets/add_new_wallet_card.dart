@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:bdk_flutter/bdk_flutter.dart';
 
 class AddNewWalletCard extends StatelessWidget {
   const AddNewWalletCard({Key? key}) : super(key: key);
@@ -8,9 +9,10 @@ class AddNewWalletCard extends StatelessWidget {
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
-        onTap: () {
-          // Todo: Navigate to add a new wallet
+        onTap: () async {
           print('Add a new wallet');
+          final mnemonic = await Mnemonic.create(WordCount.Words12);
+          print('Seed phrase generated: ${mnemonic.asString()}');
         },
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
