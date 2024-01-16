@@ -1,7 +1,6 @@
 import 'package:bitcoin_flutter_app/constants.dart';
 import 'package:bitcoin_flutter_app/features/home/home_controller.dart';
 import 'package:bitcoin_flutter_app/features/home/home_state.dart';
-import 'package:bitcoin_flutter_app/repositories/mnemonic_repository.dart';
 import 'package:bitcoin_flutter_app/services/wallet_service.dart';
 import 'package:bitcoin_flutter_app/widgets/transactions/transactions_list.dart';
 import 'package:bitcoin_flutter_app/widgets/wallets/wallet_cards_list.dart';
@@ -10,7 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({required this.bitcoinWalletService, super.key});
+
+  final WalletService bitcoinWalletService;
 
   @override
   HomeScreenState createState() => HomeScreenState();
@@ -27,11 +28,9 @@ class HomeScreenState extends State<HomeScreen> {
     _controller = HomeController(
       getState: () => _state,
       updateState: (HomeState state) => setState(() => _state = state),
-      walletService: BitcoinWalletService(
-        mnemonicRepository: SecureStorageMnemonicRepository(),
-      ),
+      bitcoinWalletService: widget.bitcoinWalletService,
     );
-    //_controller.refresh();
+    _controller.init();
   }
 
   @override

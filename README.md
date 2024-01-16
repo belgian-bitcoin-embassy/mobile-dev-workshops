@@ -851,6 +851,10 @@ We will initialize them both in our `WalletService`:
 
 ```
 
+#### Checking for existing wallet
+
+If the app is restarted, we
+
 ## Workshop 2: Lightning Network wallet
 
 In this workshop, we will add Lightning node functionality to the app like:

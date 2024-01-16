@@ -54,7 +54,7 @@ class WalletBalanceCard extends StatelessWidget {
                         ),
                         const SizedBox(height: kSpacingUnit),
                         Text(
-                          '0 BTC',
+                          '${walletBalance.balanceBtc} BTC',
                           style: theme.textTheme.bodyMedium,
                         ),
                       ],
