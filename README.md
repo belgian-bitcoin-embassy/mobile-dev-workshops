@@ -484,7 +484,7 @@ All data is hardcoded for now, but in the next steps we will add the functionali
 
 ### 2. Wallet generation
 
-To generate a new wallet, we will use the [Bitcoin Development Kit (BDK)](https://bitcoindevkit.org). It is a library that provides a Rust API with various Bitcoin functionalities, like generating a new wallet, creating transactions, etc. A Flutter package exists that wraps the Rust API in a Dart API, so that we can use it in our Flutter app. The package is called [bdk_flutter](https://github.com/LtbLightning/bdk-flutter) and we can install it by running `flutter pub add bdk_flutter` from the command line.
+To generate a new wallet, we will use the [Bitcoin Development Kit (BDK)](https://bitcoindevkit.org). It is a library that provides a Rust API with various Bitcoin functionalities, like generating a new wallet, creating addresses, transactions, etc. A Flutter package exists that wraps the Rust API in a Dart API, so that we can use it in our Flutter app. The package is called [bdk_flutter](https://github.com/LtbLightning/bdk-flutter) and we can install it by running `flutter pub add bdk_flutter` from the command line.
 
 #### BDK setup
 
@@ -506,16 +506,16 @@ Then run `cd ios && pod install && cd ..` from the command line for the changes 
 
 #### Generate a new wallet
 
-To start easy, let's just use the bdk package to generate a BIP39 seed phrase, also know as recovery phrase or mnemonic, when we press the add new wallet button and just print it out for now.
+To start easy, let's just use the bdk package directly in our `AddNewWalletCard` widget to generate a BIP39 seed phrase, also know as recovery phrase or mnemonic, when we press the button and just print it out for now.
 
-Let's go to the `AddNewWalletCard` widget and change the `onTap` callback of the `InkWell` widget to generate a new wallet and print the seed phrase to the console so we can see that it works:
+In the `AddNewWalletCard` widget change the `onTap` callback of the `InkWell` widget:
 
 ```dart
 // AddNewWalletCard widget ...
     onTap: () async {
         print('Add a new wallet');
         final mnemonic = await Mnemonic.create(WordCount.Words12);
-        print('Seed phrase generated: ${mnemonic.asString()}');
+        print('Mnemonic created: ${mnemonic.asString()}');
     },
 // ...
 ```
@@ -524,7 +524,332 @@ If you run the app now and press the add new wallet card, you should see a new s
 
 #### Securely storing the wallet
 
-#### Displaying the balance
+Now that we can generate a new wallet, we need to store it securely. For this, we will use the [Flutter Secure Storage](https://pub.dev/packages/flutter_secure_storage) package. It is a package that allows us to store data securely in the device's keychain or keystore. To install it, run `flutter pub add flutter_secure_storage` from the command line.
+
+To separate the logic concerning the storage and retrieval of the mnemonic, we will create a new class called `MnemonicRepository` in the `lib/repositories` folder. This class will have three initial methods, setting or storing a new mnemonic, retrieving the mnemonic and deleting the mnemonic. We create an abstract class with these methods so that we can easily create a mock implementation for testing purposes in the future.
+
+```dart
+abstract class MnemonicRepository {
+  Future<void> setMnemonic(String mnemonic);
+  Future<String?> getMnemonic();
+  Future<void> deleteMnemonic();
+}
+```
+
+Then we create a new class called `SecureStorageMnemonicRepository` that will be a concrete implementation to store the mnemonic in secure storage. The `MnemonicRepositoryImpl` class will look like this:
+
+```dart
+class SecureStorageMnemonicRepository implements MnemonicRepository {
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+  static const String _mnemonicKey = 'mnemonic';
+
+  @override
+  Future<void> setMnemonic(String mnemonic) async {
+    await _secureStorage.write(key: _mnemonicKey, value: mnemonic);
+  }
+
+  @override
+  Future<String?> getMnemonic() {
+    return _secureStorage.read(key: _mnemonicKey);
+  }
+
+  @override
+  Future<void> deleteMnemonic() {
+    return _secureStorage.delete(key: _mnemonicKey);
+  }
+}
+```
+
+This class can now be used to take care of the storage and retrieval of the mnemonic. Let's bring together the generation and storage in a service class.
+Since we might add other types of wallets in the future, like Lightning, we will first define an abstract class `WalletService` and add two simple methods to start, one to add a wallet and one to delete the wallet through the service:
+
+```dart
+abstract class WalletService {
+  Future<void> addWallet();
+  Future<void> deleteWallet();
+}
+```
+
+For the concrete implementation of our on-chain wallet we will create a new class called `BitcoinWalletService` that will use `bdk_flutter` to generate a new wallet and `SecureStorageMnemonicRepository` to store and delete the mnemonic. The `BitcoinWalletService` will look like this:
+
+```dart
+class BitcoinWalletService implements WalletService {
+  final MnemonicRepository _mnemonicRepository;
+
+  BitcoinWalletService({required MnemonicRepository mnemonicRepository})
+      : _mnemonicRepository = mnemonicRepository;
+
+  @override
+  Future<void> addWallet() async {
+    final mnemonic = await Mnemonic.create(WordCount.Words12);
+    await _mnemonicRepository.setMnemonic(mnemonic.asString());
+    print('Wallet added with mnemonic: ${mnemonic.asString()}');
+  }
+
+  @override
+  Future<void> deleteWallet() async {
+    await _mnemonicRepository.deleteMnemonic();
+  }
+}
+```
+
+#### Bringing together the UI and the service
+
+What is now missing is a way to bring together the UI and the service without mixing up the logic. For this, we could use state management packages like provider, riverpod, etc., but for now we will just manage the state in the `HomeScreen` widget itself and create a controller class that will be responsible of updating it.
+
+To be able to manage state, we first need to define the fields or data that forms part of the state.
+As we need to show the wallet balance card in the UI if a wallet was added, we will create a model for this data called `WalletBalance` in the `lib/view_models` folder:
+
+```dart
+@immutable
+class WalletBalance extends Equatable {
+  const WalletBalance({
+    required this.walletName,
+  });
+
+  final String walletName;
+
+  @override
+  List<Object> get props => [
+        walletName,
+      ];
+}
+```
+
+Currently it only holds a name for the wallet, since we have not implemented a way to get the balance yet. We will add this in the next steps.
+In the future when we add Lightning, it can also hold the type of wallet to know which icon to show, etc.
+
+Now we can use it as a field of the HomeState class that will hold the state of the HomeScreen widget. Just as the WalletBalance, we will annotate it with `@immutable` and extend it with Equatable of the `equatable` package so that Flutter can easily know when the state has changed and rebuild the widget. Since it is part of the home feature only, just put it in the `lib/features/home` folder:
+
+```dart
+@immutable
+class HomeState extends Equatable {
+  const HomeState({
+    this.walletBalance,
+  });
+
+  final WalletBalance? walletBalance;
+
+  HomeState copyWith({
+    WalletBalance? walletBalance,
+    bool clearWalletBalance = false,
+  }) {
+    return HomeState(
+      walletBalance:
+          clearWalletBalance ? null : walletBalance ?? this.walletBalance,
+    );
+  }
+
+  @override
+  List<Object?> get props => [walletBalance];
+}
+```
+
+The copyWith method is used to create a new instance of the state with other values instead of mutating an existing instance. This is important for Flutter to know when the state has changed and rebuild the widget.
+
+Now we can create the controller. In the same folder of the home feature, next to the screen and state, add the `home_controller.dart` file. The controller should be able to get the current state and update it. To do this, we will pass two callbacks to the controller, one to get the current state and one to update the state. This way, the controller does not need to know about the UI and the UI does not need to know about the controller. It should also have a dependency to the `WalletService` to be able to add and delete wallets. The `HomeController` will look like this:
+
+```dart
+class HomeController {
+  final HomeState Function() _getState;
+  final Function(HomeState state) _updateState;
+  final WalletService _walletService;
+
+  HomeController({
+    required getState,
+    required updateState,
+    required walletService,
+  })  : _getState = getState,
+        _updateState = updateState,
+        _walletService = walletService;
+
+  Future<void> addNewWallet() async {
+    try {
+      await _walletService.addWallet();
+      _updateState(
+        _getState().copyWith(
+          walletBalance: const WalletBalance(
+            walletName: 'Savings',
+          ),
+        ),
+      );
+    } catch (e) {
+      print(e);
+      // An error can be added to the state here to show to the user, but this is not part of the workshop
+    }
+  }
+
+  Future<void> deleteWallet() async {
+    try {
+      await _walletService.deleteWallet();
+      _updateState(_getState().copyWith(clearWalletBalance: true));
+    } catch (e) {
+      print(e);
+      // An error can be added to the state here to show to the user, but this is not part of the workshop
+    }
+  }
+}
+```
+
+Now it is time to incorporate this state and the controller in the `HomeScreen` widget. First, we will add the state to the widget. To do this, we will use the `StatefulWidget` widget instead of the `StatelessWidget` widget. This way, we can use the `setState` method to update the state and rebuild the widget. The `HomeScreen` widget will now look like this:
+
+```dart
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  HomeScreenState createState() => HomeScreenState();
+}
+
+class HomeScreenState extends State<HomeScreen> {
+  HomeState _state = const HomeState();
+  late HomeController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = HomeController(
+      getState: () => _state,
+      updateState: (HomeState state) => setState(() => _state = state),
+      walletService: BitcoinWalletService(
+        mnemonicRepository: SecureStorageMnemonicRepository(),
+      ),
+    );
+  }
+
+  // ... rest of the widget
+}
+```
+
+In production code, an instance of the `BitcoinWalletService` could be initalized at an higher level or as a Provider and the same instance could be used by the whole app, but for this workshop, we will just instantiate it in the `HomeScreen`.
+
+We can now also use the state to show the correct widgets in the UI. We will use the `walletBalance` field of the state to show the `WalletBalanceCard` if it is not null and the `AddNewWalletCard` otherwise. For this we need to pass the `walletBalance` to the `WalletCardsList` widget and add callbacks to the `WalletCardsList` and `WalletBalanceCard` widgets to be able to add and delete wallets. Also the `WalletCardsList`, `WalletBalanceCard` and `AddNewWalletCard` widgets will be updated as follow:
+
+```dart
+// ... in the Scaffold of the HomeScreen widget
+    child: WalletCardsList(
+    _state.walletBalance == null ? [] : [_state.walletBalance!],
+    onAddNewWallet: _controller.addNewWallet,
+    onDeleteWallet: _controller.deleteWallet,
+    ),
+// ...
+
+// in wallet_cards_list.dart
+class WalletCardsList extends StatelessWidget {
+  const WalletCardsList(
+    this.walletBalances, {
+    required this.onAddNewWallet,
+    required this.onDeleteWallet,
+    super.key,
+  });
+
+  final List<WalletBalance> walletBalances;
+  final VoidCallback onAddNewWallet;
+  final VoidCallback onDeleteWallet;
+
+  @override
+  Widget build(context) {
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      itemCount: walletBalances.isEmpty ? 1 : walletBalances.length,
+      itemExtent: kSpacingUnit * 20,
+      itemBuilder: (BuildContext context, int index) {
+        if (walletBalances.isEmpty) {
+          return AddNewWalletCard(onPressed: onAddNewWallet);
+        } else {
+          return WalletBalanceCard(
+            walletBalances[index],
+            onDelete: onDeleteWallet,
+          );
+        }
+      },
+    );
+  }
+}
+
+// in wallet_balance_card.dart
+class WalletBalanceCard extends StatelessWidget {
+  const WalletBalanceCard(this.walletBalance,
+      {required this.onDelete, Key? key})
+      : super(key: key);
+
+  final WalletBalance walletBalance;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    //  ... rest of components
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(kSpacingUnit),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          walletBalance.walletName // Used the wallet balance model of the state here
+                          style: theme.textTheme.labelMedium,
+                        ),
+                        const SizedBox(height: kSpacingUnit),
+                        Text(
+                          '0 BTC',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              ],
+            ),
+            Positioned(
+              top: 0,
+              right: 0,
+              child: CloseButton(
+                onPressed: onDelete, // Added callback
+                style: ButtonStyle(
+                  padding: MaterialStateProperty.all(
+                    EdgeInsets.zero,
+                  ),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  iconSize: MaterialStateProperty.all(
+                    kSpacingUnit * 2,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// add_new_wallet_card.dart
+class AddNewWalletCard extends StatelessWidget {
+  const AddNewWalletCard({required this.onPressed, Key? key}) : super(key: key);
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(kSpacingUnit),
+        onTap: onPressed,
+        // ... rest of wdiget
+```
+
+#### Obtaining the balance
+
+To obtain the balance we will also use the Bitcoin Development Kit, through `bdk_flutter`, but to do this we need to dive a bit deeper in how this package works.
+
+We will need to create a BDK `Wallet` and a `Blockchain` instance. The `Wallet` is to be able to derive addresses and create and sign transactions and the `Blockchain` instance is needed to sync with the Bitcoin blockchain to obtain the needed data, like the balance, and to broadcast our own transactions later.
+
+We will initialize them both in our `WalletService`:
+
+```dart
+
+```
 
 ## Workshop 2: Lightning Network wallet
 
@@ -548,6 +873,14 @@ The [Lightning Development Kit (LDK)](https://lightningdevkit.org) will be used 
 ## Workshop 3: Other Lightning libraries and Lightning Service Provider integration
 
 In this workshop, some other ways to embed a Lightning wallet, like [Breez SDK](https://sdk-doc.breez.technology/), will be shown and we will improve the UX (User eXperience) of the app by integrating with [Lightning Service Providers (LSP's)](https://github.com/BitcoinAndLightningLayerSpecs/lsp).
+
+```
+
+```
+
+```
+
+```
 
 ```
 

@@ -1,9 +1,15 @@
 import 'package:bitcoin_flutter_app/constants.dart';
+import 'package:bitcoin_flutter_app/view_models/wallet_balance.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
 class WalletBalanceCard extends StatelessWidget {
-  const WalletBalanceCard({Key? key}) : super(key: key);
+  const WalletBalanceCard(this.walletBalance,
+      {required this.onDelete, Key? key})
+      : super(key: key);
+
+  final WalletBalance walletBalance;
+  final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -43,12 +49,12 @@ class WalletBalanceCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Savings wallet',
+                          walletBalance.walletName,
                           style: theme.textTheme.labelMedium,
                         ),
                         const SizedBox(height: kSpacingUnit),
                         Text(
-                          '0.00000000 BTC',
+                          '0 BTC',
                           style: theme.textTheme.bodyMedium,
                         ),
                       ],
@@ -61,9 +67,7 @@ class WalletBalanceCard extends StatelessWidget {
               top: 0,
               right: 0,
               child: CloseButton(
-                onPressed: () {
-                  print('Delete wallet');
-                },
+                onPressed: onDelete,
                 style: ButtonStyle(
                   padding: MaterialStateProperty.all(
                     EdgeInsets.zero,

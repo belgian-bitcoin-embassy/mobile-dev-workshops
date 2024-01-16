@@ -1,19 +1,17 @@
+import 'package:bitcoin_flutter_app/constants.dart';
 import 'package:flutter/material.dart';
-import 'package:bdk_flutter/bdk_flutter.dart';
 
 class AddNewWalletCard extends StatelessWidget {
-  const AddNewWalletCard({Key? key}) : super(key: key);
+  const AddNewWalletCard({required this.onPressed, Key? key}) : super(key: key);
+
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () async {
-          print('Add a new wallet');
-          final mnemonic = await Mnemonic.create(WordCount.Words12);
-          print('Seed phrase generated: ${mnemonic.asString()}');
-        },
+        borderRadius: BorderRadius.circular(kSpacingUnit),
+        onTap: onPressed,
         child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
