@@ -60,6 +60,7 @@ class BitcoinWalletService implements WalletService {
 
   bool get hasWallet => _wallet != null;
 
+  /* Uncomment and add this method again when we implement the refresh in the UI
   Future<void> sync() async {
     if (_wallet == null) {
       throw NoWalletException('No wallet to sync!');
@@ -67,6 +68,7 @@ class BitcoinWalletService implements WalletService {
 
     await _wallet!.sync(_blockchain);
   }
+  */
 
   Future<void> _initBlockchain() async {
     _blockchain = await Blockchain.create(
