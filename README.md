@@ -443,7 +443,7 @@ With this, we have the basic layout of our Bitcoin wallet app. It should look so
 
 ![Screenshot 2024-01-14 at 22 27 56](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/53016ef4-fd4e-4738-a002-fc745e413b6d)
 
-![Screenshot 2024-01-14 at 22 28 10](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/a6c9242a-af0f-489d-a911-ce4b3bbfd7d5)
+![Screenshot 2024-01-17 at 23 50 43](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/299d06b0-ee1a-44a5-9ad2-5e9498af2e4a)
 
 All data is hardcoded for now, but in the next steps we will add the functionality to generate a new wallet and display the balance and transactions.
 
