@@ -60,9 +60,7 @@ class HomeController {
 
   /*Future<void> refresh() async {
     try {} catch (e) {
-      if (e is NoWalletException) {
-        _updateState(_getState().copyWith(clearWalletBalance: true));
-      }
+      print(e);
     }
   }*/
 }

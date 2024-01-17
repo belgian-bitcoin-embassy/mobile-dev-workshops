@@ -23,7 +23,8 @@ class BitcoinWalletService implements WalletService {
     final mnemonic = await _mnemonicRepository.getMnemonic();
     if (mnemonic != null && mnemonic.isNotEmpty) {
       await _initWallet(await Mnemonic.fromString(mnemonic));
-      print('Wallet with mnemonic $mnemonic found and initialized!');
+      await sync();
+      print('Wallet with mnemonic $mnemonic found, initialized and synced!');
     } else {
       print('No wallet found!');
     }
@@ -60,15 +61,9 @@ class BitcoinWalletService implements WalletService {
 
   bool get hasWallet => _wallet != null;
 
-  /* Uncomment and add this method again when we implement the refresh in the UI
   Future<void> sync() async {
-    if (_wallet == null) {
-      throw NoWalletException('No wallet to sync!');
-    }
-
     await _wallet!.sync(_blockchain);
   }
-  */
 
   Future<void> _initBlockchain() async {
     _blockchain = await Blockchain.create(
@@ -111,10 +106,4 @@ class BitcoinWalletService implements WalletService {
 
     return (receivingDescriptor, changeDescriptor);
   }
-}
-
-class NoWalletException implements Exception {
-  final String message;
-
-  NoWalletException(this.message);
 }
