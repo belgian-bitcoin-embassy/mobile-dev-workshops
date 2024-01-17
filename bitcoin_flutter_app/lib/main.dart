@@ -1,12 +1,28 @@
 import 'package:bitcoin_flutter_app/features/home/home_screen.dart';
+import 'package:bitcoin_flutter_app/repositories/mnemonic_repository.dart';
+import 'package:bitcoin_flutter_app/services/wallet_service.dart';
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Instantiate the wallet service in the main so
+  // we can have one instance of the service for the entire app...
+  final bitcoinWalletService = BitcoinWalletService(
+    mnemonicRepository: SecureStorageMnemonicRepository(),
+  );
+  // ...and have it initialized before the app starts.
+  await bitcoinWalletService.init();
+
+  runApp(MyApp(
+    bitcoinWalletService: bitcoinWalletService,
+  ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({required this.bitcoinWalletService, super.key});
+
+  final WalletService bitcoinWalletService;
 
   // This widget is the root of your application.
   @override
@@ -32,7 +48,9 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.orange),
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
+      home: HomeScreen(
+        bitcoinWalletService: bitcoinWalletService,
+      ),
     );
   }
 }
