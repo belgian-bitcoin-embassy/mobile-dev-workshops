@@ -400,70 +400,33 @@ class WalletActionsBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(kSpacingUnit * 3),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Wallet actions',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              IconLabelStackedButton(
-                icon: Icons.arrow_downward,
-                label: 'Receive funds',
-                onPressed: () {
-                  print('Receive funds');
-                },
-              ),
-              IconLabelStackedButton(
-                icon: Icons.arrow_upward,
-                label: 'Send funds',
-                onPressed: () {
-                  print('Send funds');
-                },
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-```
-
-This widget adds a title and two buttons to the bottom sheet modal. The buttons are created with a custom widget called `IconLabelStackedButton` that we will create in the `lib/widgets/buttons` folder. This is another way to organize widgets, by type, instead of by feature. The `IconLabelStackedButton` widget as it name says will show an icon and a label stacked vertically. It will also have an `onPressed` callback to be able to do something when the button is pressed. The widget will look like this:
-
-```dart
-class IconLabelStackedButton extends StatelessWidget {
-  const IconLabelStackedButton({
-    Key? key,
-    required this.icon,
-    required this.label,
-    required this.onPressed,
-  }) : super(key: key);
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      customBorder: const CircleBorder(),
-      onTap: onPressed,
+    return DefaultTabController(
+      length: 2,
       child: Padding(
-        padding: const EdgeInsets.all(kSpacingUnit * 5),
+        padding: const EdgeInsets.symmetric(vertical: kSpacingUnit * 3),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              child: Icon(icon),
+            const TabBar(
+              tabs: [
+                Tab(
+                  icon: Icon(Icons.arrow_downward),
+                  text: 'Receive funds',
+                ),
+                Tab(
+                  icon: Icon(Icons.arrow_upward),
+                  text: 'Send funds',
+                ),
+              ],
             ),
-            const SizedBox(height: kSpacingUnit),
-            Text(label),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  Container(),
+                  Container(),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -471,6 +434,8 @@ class IconLabelStackedButton extends StatelessWidget {
   }
 }
 ```
+
+This widget will show a tab bar with two tabs, one for receiving and one for sending funds. For now, we will just show two empty containers, but in the next steps we will add the functionality to send and receive funds.
 
 #### Wrap up
 
