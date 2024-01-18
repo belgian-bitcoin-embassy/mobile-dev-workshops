@@ -53,7 +53,7 @@ class SendTab extends StatelessWidget {
               ),
               Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: kSpacingUnit * 2),
+                    const EdgeInsets.symmetric(horizontal: kSpacingUnit * 1.5),
                 child: Text(
                   'The fee rate (sat/vB) to pay for this transaction.',
                   style: theme.textTheme.bodySmall,
