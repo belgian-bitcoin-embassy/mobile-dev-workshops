@@ -1,7 +1,16 @@
+import 'package:bitcoin_flutter_app/constants.dart';
+import 'package:bitcoin_flutter_app/features/wallet_actions/receive/receive_tab.dart';
+import 'package:bitcoin_flutter_app/services/wallet_service.dart';
 import 'package:flutter/material.dart';
 
 class WalletActionsBottomSheet extends StatelessWidget {
-  const WalletActionsBottomSheet({Key? key}) : super(key: key);
+  const WalletActionsBottomSheet({
+    required WalletService bitcoinWalletService,
+    Key? key,
+  })  : _bitcoinWalletService = bitcoinWalletService,
+        super(key: key);
+
+  final WalletService _bitcoinWalletService;
 
   static const List<Tab> actionTabs = <Tab>[
     Tab(
@@ -28,11 +37,17 @@ class WalletActionsBottomSheet extends StatelessWidget {
             tabs: actionTabs,
           ),
         ),
-        body: TabBarView(
-          children: [
-            Container(),
-            Container(),
-          ],
+        resizeToAvoidBottomInset: false,
+        body: Padding(
+          padding: const EdgeInsets.all(kSpacingUnit * 4),
+          child: TabBarView(
+            children: [
+              ReceiveTab(
+                bitcoinWalletService: _bitcoinWalletService,
+              ),
+              Container(),
+            ],
+          ),
         ),
       ),
     );

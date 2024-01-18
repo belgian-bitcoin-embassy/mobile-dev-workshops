@@ -1,4 +1,4 @@
-import 'package:bitcoin_flutter_app/features/receive/receive_state.dart';
+import 'package:bitcoin_flutter_app/features/wallet_actions/receive/receive_state.dart';
 import 'package:bitcoin_flutter_app/services/wallet_service.dart';
 
 class ReceiveController {
@@ -15,12 +15,19 @@ class ReceiveController {
         _bitcoinWalletService = bitcoinWalletService;
 
   void amountChangeHandler(String? amount) async {
-    if (amount == null || amount.isEmpty) {
-      _updateState(_getState().copyWith(amountSat: 0));
-    } else {
-      final amountBtc = double.parse(amount);
-      final int amountSat = (amountBtc * 100000000).round();
-      _updateState(_getState().copyWith(amountSat: amountSat));
+    try {
+      if (amount == null || amount.isEmpty) {
+        _updateState(
+            _getState().copyWith(amountSat: 0, isInvalidAmount: false));
+      } else {
+        final amountBtc = double.parse(amount);
+        final int amountSat = (amountBtc * 100000000).round();
+        _updateState(
+            _getState().copyWith(amountSat: amountSat, isInvalidAmount: false));
+      }
+    } catch (e) {
+      print(e);
+      _updateState(_getState().copyWith(isInvalidAmount: true));
     }
   }
 
@@ -42,11 +49,18 @@ class ReceiveController {
 
   Future<void> generateInvoice() async {
     try {
-      final invoice = '';
-      //await _bitcoinWalletService.generateInvoice();
+      _updateState(_getState().copyWith(isGeneratingInvoice: true));
+
+      final invoice = await _bitcoinWalletService.generateInvoice();
       _updateState(_getState().copyWith(bitcoinInvoice: invoice));
     } catch (e) {
       print(e);
+    } finally {
+      _updateState(_getState().copyWith(isGeneratingInvoice: false));
     }
+  }
+
+  void editInvoice() {
+    _updateState(const ReceiveState());
   }
 }

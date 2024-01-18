@@ -1126,6 +1126,32 @@ Try it out and you should see a balance of 0.0 BTC for an added wallet in the UI
 
 ### 3. Receiving funds
 
+To be able to receive funds, we need to be able to generate Bitcoin addresses. For this we will add a new method to the `BitcoinWalletService` class. Since any type of wallet needs a way to receive funds and generate addresses, we will add a new abstract method to the `WalletService` interface. Lightning wallets use BOLT11 invoices instead of Bitcoin addresses, and Bitcoin addresses were also called invoices in the past, so we will call the method `generateInvoice`:
+
+```dart
+abstract class WalletService {
+  Future<void> addWallet();
+  Future<void> deleteWallet();
+  Future<int> getSpendableBalanceSat();
+  Future<String> generateInvoice(); // Added this
+}
+```
+
+In the `BitcoinWalletService` class, we will add a concrete implementation for this method, again using the BDK `Wallet` instance we already have available at this time:
+
+```dart
+// ... in BitcoinWalletService class
+@override
+Future<String> generateInvoice() async {
+  final invoice = await _wallet!.getAddress(
+    addressIndex: const AddressIndex(),
+  );
+
+  return invoice.address;
+}
+// ... rest of class
+```
+
 ### 4. Transaction history
 
 ### 5. Sending funds
@@ -1154,6 +1180,10 @@ The [Lightning Development Kit (LDK)](https://lightningdevkit.org) will be used 
 ## Workshop 3: Other Lightning libraries and Lightning Service Provider integration
 
 In this workshop, some other ways to embed a Lightning wallet, like [Breez SDK](https://sdk-doc.breez.technology/), will be shown and we will improve the UX (User eXperience) of the app by integrating with [Lightning Service Providers (LSP's)](https://github.com/BitcoinAndLightningLayerSpecs/lsp).
+
+```
+
+```
 
 ```
 
