@@ -1124,6 +1124,14 @@ Now in the `WalletBalanceCard` where the balance should be really shown in the U
 
 Try it out and you should see a balance of 0.0 BTC for an added wallet in the UI.
 
+### 3. Receiving funds
+
+### 4. Transaction history
+
+### 5. Sending funds
+
+### 6. Backup wallet
+
 ## Workshop 2: Lightning Network wallet
 
 In this workshop, we will add Lightning node functionality to the app like:

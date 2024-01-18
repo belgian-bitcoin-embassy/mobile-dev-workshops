@@ -56,7 +56,10 @@ class HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => showModalBottomSheet(
           context: context,
-          builder: (context) => const WalletActionsBottomSheet(),
+          isScrollControlled: true,
+          builder: (context) => WalletActionsBottomSheet(
+            bitcoinWalletService: widget.bitcoinWalletService,
+          ),
         ),
         child: SvgPicture.asset(
           'assets/icons/in_out_arrows.svg',
