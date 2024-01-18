@@ -1,5 +1,6 @@
 import 'package:bitcoin_flutter_app/constants.dart';
 import 'package:bitcoin_flutter_app/features/wallet_actions/receive/receive_tab.dart';
+import 'package:bitcoin_flutter_app/features/wallet_actions/send/send_tab.dart';
 import 'package:bitcoin_flutter_app/services/wallet_service.dart';
 import 'package:flutter/material.dart';
 
@@ -45,7 +46,7 @@ class WalletActionsBottomSheet extends StatelessWidget {
               ReceiveTab(
                 bitcoinWalletService: _bitcoinWalletService,
               ),
-              Container(),
+              const SendTab(),
             ],
           ),
         ),
