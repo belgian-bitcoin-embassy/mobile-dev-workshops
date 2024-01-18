@@ -5,6 +5,7 @@ abstract class WalletService {
   Future<void> addWallet();
   Future<void> deleteWallet();
   Future<int> getSpendableBalanceSat();
+  Future<String> generateInvoice();
 }
 
 class BitcoinWalletService implements WalletService {
@@ -57,6 +58,15 @@ class BitcoinWalletService implements WalletService {
     print('Total balance: ${balance.total}');
 
     return balance.spendable;
+  }
+
+  @override
+  Future<String> generateInvoice() async {
+    final invoice = await _wallet!.getAddress(
+      addressIndex: const AddressIndex(),
+    );
+
+    return invoice.address;
   }
 
   bool get hasWallet => _wallet != null;

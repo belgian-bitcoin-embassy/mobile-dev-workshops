@@ -4,7 +4,7 @@ import 'package:bitcoin_flutter_app/features/home/home_state.dart';
 import 'package:bitcoin_flutter_app/services/wallet_service.dart';
 import 'package:bitcoin_flutter_app/widgets/transactions/transactions_list.dart';
 import 'package:bitcoin_flutter_app/widgets/wallets/wallet_cards_list.dart';
-import 'package:bitcoin_flutter_app/widgets/wallets/wallet_actions_bottom_sheet.dart';
+import 'package:bitcoin_flutter_app/features/wallet_actions/wallet_actions_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -56,7 +56,10 @@ class HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => showModalBottomSheet(
           context: context,
-          builder: (context) => const WalletActionsBottomSheet(),
+          isScrollControlled: true,
+          builder: (context) => WalletActionsBottomSheet(
+            bitcoinWalletService: widget.bitcoinWalletService,
+          ),
         ),
         child: SvgPicture.asset(
           'assets/icons/in_out_arrows.svg',
