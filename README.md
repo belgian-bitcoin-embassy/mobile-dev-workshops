@@ -392,41 +392,41 @@ To add a floating button, just add the following to the `Scaffold` widget:
 // ...
 ```
 
-And add the `WalletActionsBottomSheet` widget to the `lib/widgets/wallets` folder:
+For the wallet actions, we will create a separate features folder `lib/features/wallet_actions` and add the `WalletActionsBottomSheet` widget to it in the `wallet_actions_bottom_sheet.dart` file:
 
 ```dart
 class WalletActionsBottomSheet extends StatelessWidget {
   const WalletActionsBottomSheet({Key? key}) : super(key: key);
 
+  static const List<Tab> actionTabs = <Tab>[
+    Tab(
+      icon: Icon(Icons.arrow_downward),
+      text: 'Receive funds',
+    ),
+    Tab(
+      icon: Icon(Icons.arrow_upward),
+      text: 'Send funds',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: kSpacingUnit * 3),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      length: actionTabs.length,
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          actions: const [
+            CloseButton(),
+          ],
+          bottom: const TabBar(
+            tabs: actionTabs,
+          ),
+        ),
+        body: TabBarView(
           children: [
-            const TabBar(
-              tabs: [
-                Tab(
-                  icon: Icon(Icons.arrow_downward),
-                  text: 'Receive funds',
-                ),
-                Tab(
-                  icon: Icon(Icons.arrow_upward),
-                  text: 'Send funds',
-                ),
-              ],
-            ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  Container(),
-                  Container(),
-                ],
-              ),
-            ),
+            Container(),
+            Container(),
           ],
         ),
       ),
@@ -435,7 +435,7 @@ class WalletActionsBottomSheet extends StatelessWidget {
 }
 ```
 
-This widget will show a tab bar with two tabs, one for receiving and one for sending funds. For now, we will just show two empty containers, but in the next steps we will add the functionality to send and receive funds.
+This widget will show a tab bar with two tabs, one for receiving and one for sending funds. For now, we will just show two empty containers, but in the next steps we will add the components and functionality to send and receive funds.
 
 #### Wrap up
 
@@ -443,7 +443,7 @@ With this, we have the basic layout of our Bitcoin wallet app. It should look so
 
 ![Screenshot 2024-01-14 at 22 27 56](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/53016ef4-fd4e-4738-a002-fc745e413b6d)
 
-![Screenshot 2024-01-17 at 23 50 43](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/299d06b0-ee1a-44a5-9ad2-5e9498af2e4a)
+![Screenshot 2024-01-18 at 14 02 26](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/3384cd74-d8e4-4e29-a1b0-22169b15b5f6)
 
 All data is hardcoded for now, but in the next steps we will add the functionality to generate a new wallet and display the balance and transactions.
 
