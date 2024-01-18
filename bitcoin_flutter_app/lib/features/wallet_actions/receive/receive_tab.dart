@@ -32,7 +32,6 @@ class ReceiveTabState extends State<ReceiveTab> {
 
   @override
   Widget build(BuildContext context) {
-    // Todo: add amount, label and message fields and a button to generate a new address
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,

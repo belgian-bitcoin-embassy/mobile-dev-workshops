@@ -1352,6 +1352,469 @@ Future<String> generateInvoice() async {
 // ... rest of class
 ```
 
+By using a new `AddressIndex` instance, the descriptor index is incremented so that we can generate a new address every time we call this method. This is important for privacy reasons, since we don't want to reuse addresses.
+
+Now from our `ReceiveTab` we would like to call this `generateInvoice` method when the button is pressed. Let's apply the same pattern as with the `HomeScreen` and add a `receive_controller.dart` and a `receive_state.dart` file in the `lib/features/receive` folder.
+
+The `ReceiveState` class will be used to hold the input field values, possible error and loading flags, and the generated invoice . It should look like this:
+
+```dart
+@immutable
+class ReceiveState extends Equatable {
+  const ReceiveState({
+    this.amountSat,
+    this.isInvalidAmount = false,
+    this.label,
+    this.message,
+    this.bitcoinInvoice,
+    this.isGeneratingInvoice = false,
+  });
+
+  final int? amountSat;
+  final bool isInvalidAmount;
+  final String? label;
+  final String? message;
+  final String? bitcoinInvoice;
+  final bool isGeneratingInvoice;
+
+  double? get amountBtc {
+    if (amountSat == null) {
+      return null;
+    }
+
+    return amountSat! / 100000000;
+  }
+
+  String? get bip21Uri {
+    if (bitcoinInvoice == null) {
+      return null;
+    }
+
+    if (amountSat == null && label == null && message == null) {
+      return bitcoinInvoice;
+    }
+
+    return 'bitcoin:$bitcoinInvoice?'
+        '${amountBtc != null ? 'amount=$amountBtc&' : ''}'
+        '${label != null ? 'label=$label&' : ''}'
+        '${message != null ? 'message=$message' : ''}';
+  }
+
+  ReceiveState copyWith({
+    int? amountSat,
+    bool? isInvalidAmount,
+    String? label,
+    String? message,
+    String? bitcoinInvoice,
+    bool? isGeneratingInvoice,
+  }) {
+    return ReceiveState(
+      amountSat: amountSat ?? this.amountSat,
+      isInvalidAmount: isInvalidAmount ?? this.isInvalidAmount,
+      label: label ?? this.label,
+      message: message ?? this.message,
+      bitcoinInvoice: bitcoinInvoice ?? this.bitcoinInvoice,
+      isGeneratingInvoice: isGeneratingInvoice ?? this.isGeneratingInvoice,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        amountSat,
+        isInvalidAmount,
+        label,
+        message,
+        bitcoinInvoice,
+        isGeneratingInvoice,
+      ];
+}
+```
+
+As you can see, the `bip21Uri` and the `amountBtc` can be derived from the other fields, so getters are used for them instead of adding them as extra fields, saving us the need to set and update them separately.
+
+The `ReceiveController` class will be used to handle and validate the input field changes and update the state accordingly. Also the button press to generate the invoice should be handled here and the `generateInvoice` method of the `BitcoinWalletService` should be called, so it should be possible to pass the `BitcoinWalletService` as a dependency. It should look like this:
+
+```dart
+class ReceiveController {
+  final ReceiveState Function() _getState;
+  final Function(ReceiveState state) _updateState;
+  final WalletService _bitcoinWalletService;
+
+  ReceiveController({
+    required getState,
+    required updateState,
+    required bitcoinWalletService,
+  })  : _getState = getState,
+        _updateState = updateState,
+        _bitcoinWalletService = bitcoinWalletService;
+
+  void amountChangeHandler(String? amount) async {
+    try {
+      if (amount == null || amount.isEmpty) {
+        _updateState(
+            _getState().copyWith(amountSat: 0, isInvalidAmount: false));
+      } else {
+        final amountBtc = double.parse(amount);
+        final int amountSat = (amountBtc * 100000000).round();
+        _updateState(
+            _getState().copyWith(amountSat: amountSat, isInvalidAmount: false));
+      }
+    } catch (e) {
+      print(e);
+      _updateState(_getState().copyWith(isInvalidAmount: true));
+    }
+  }
+
+  void labelChangeHandler(String? label) async {
+    if (label == null || label.isEmpty) {
+      _updateState(_getState().copyWith(label: ''));
+    } else {
+      _updateState(_getState().copyWith(label: label));
+    }
+  }
+
+  void messageChangeHandler(String? message) async {
+    if (message == null || message.isEmpty) {
+      _updateState(_getState().copyWith(message: ''));
+    } else {
+      _updateState(_getState().copyWith(message: message));
+    }
+  }
+
+  Future<void> generateInvoice() async {
+    try {
+      _updateState(_getState().copyWith(isGeneratingInvoice: true));
+
+      final invoice = await _bitcoinWalletService.generateInvoice();
+      _updateState(_getState().copyWith(bitcoinInvoice: invoice));
+    } catch (e) {
+      print(e);
+    } finally {
+      _updateState(_getState().copyWith(isGeneratingInvoice: false));
+    }
+  }
+
+  void editInvoice() {
+    _updateState(const ReceiveState());
+  }
+}
+```
+
+Now let's connect the logic with the UI again. To add the state and controller to the `ReceiveTab` widget, we will need to change it from a `StatelessWidget` to a `StatefulWidget` widget and initialize the state and the controller just like we did in the `HomeScreen` widget.
+
+```dart
+// ... in `ReceiveTab` class
+class ReceiveTab extends StatefulWidget {
+  const ReceiveTab({required this.bitcoinWalletService, super.key});
+
+  final WalletService bitcoinWalletService;
+
+  @override
+  ReceiveTabState createState() => ReceiveTabState();
+}
+
+class ReceiveTabState extends State<ReceiveTab> {
+  ReceiveState _state = const ReceiveState();
+  late ReceiveController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = ReceiveController(
+      getState: () => _state,
+      updateState: (ReceiveState state) => setState(() => _state = state),
+      bitcoinWalletService: widget.bitcoinWalletService,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+// ... rest of widget
+```
+
+Now for the `build` method we can also take the `isGeneratingInvoice` flag into account to show a loading indicator while the invoice is being generated and we can also check the availability of the `bitcoinInvoice` or `bip21Uri` to show a QR code and a text field to scan and copy the invoice. To do this, let's extract the input fields into a new widget called `ReceiveTabInputFields` and create a new widget called `ReceiveTabInvoice` to show the QR code and the text field. Using the state and controller, the `build` method of the `ReceiveTab` widget will now look like this:
+
+```dart
+@override
+Widget build(BuildContext context) {
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      _state.isGeneratingInvoice
+          ? const CircularProgressIndicator()
+          : _state.bip21Uri == null || _state.bip21Uri!.isEmpty
+              ? ReceiveTabInputFields(
+                  canGenerateInvoice:
+                      (widget.bitcoinWalletService as BitcoinWalletService)
+                          .hasWallet,
+                  amountChangeHandler: _controller.amountChangeHandler,
+                  labelChangeHandler: _controller.labelChangeHandler,
+                  messageChangeHandler: _controller.messageChangeHandler,
+                  isInvalidAmount: _state.isInvalidAmount,
+                  generateInvoiceHandler: _controller.generateInvoice,
+                )
+              : ReceiveTabInvoice(
+                  bip21Uri: _state.bip21Uri!,
+                  editInvoiceHandler: _controller.editInvoice,
+                ),
+    ],
+  );
+}
+```
+
+The `ReceiveTabInputFields` widget will look like this:
+
+```dart
+class ReceiveTabInputFields extends StatelessWidget {
+  const ReceiveTabInputFields({
+    Key? key,
+    required this.canGenerateInvoice,
+    required this.amountChangeHandler,
+    required this.labelChangeHandler,
+    required this.messageChangeHandler,
+    required this.isInvalidAmount,
+    required this.generateInvoiceHandler,
+  }) : super(key: key);
+
+  final bool canGenerateInvoice;
+  final Function(String?) amountChangeHandler;
+  final Function(String?) labelChangeHandler;
+  final Function(String?) messageChangeHandler;
+  final bool isInvalidAmount;
+  final Future<void> Function() generateInvoiceHandler;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const SizedBox(height: kSpacingUnit * 2),
+        // Amount Field
+        SizedBox(
+          width: 250,
+          child: TextField(
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: 'Amount (optional)',
+              hintText: '0',
+              helperText: 'The amount you want to receive in BTC.',
+            ),
+            onChanged: amountChangeHandler,
+          ),
+        ),
+        const SizedBox(height: kSpacingUnit * 2),
+
+        // Label Field
+        SizedBox(
+          width: 250,
+          child: TextField(
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: 'Label (optional)',
+              hintText: 'Alice',
+              helperText: 'A name the payer knows you by.',
+            ),
+            onChanged: labelChangeHandler,
+          ),
+        ),
+        const SizedBox(height: kSpacingUnit * 2),
+
+        // Message Field
+        SizedBox(
+          width: 250,
+          child: TextField(
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: 'Message (optional)',
+              hintText: 'Payback for dinner.',
+              helperText: 'A note to the payer.',
+            ),
+            onChanged: messageChangeHandler,
+          ),
+        ),
+        const SizedBox(height: kSpacingUnit * 2),
+
+        // Error message
+        SizedBox(
+          height: kSpacingUnit * 2,
+          child: Text(
+            !canGenerateInvoice
+                ? 'You need to create a wallet first.'
+                : isInvalidAmount
+                    ? 'Please enter a valid amount.'
+                    : '',
+            style: const TextStyle(
+              color: Colors.red,
+            ),
+          ),
+        ),
+        const SizedBox(height: kSpacingUnit * 2),
+        // Generate invoice Button
+        ElevatedButton.icon(
+          onPressed: !canGenerateInvoice || isInvalidAmount
+              ? null
+              : () async {
+                  await generateInvoiceHandler();
+                },
+          label: const Text('Generate invoice'),
+          icon: const Icon(Icons.qr_code),
+        ),
+      ],
+    );
+  }
+}
+```
+
+Let's create the `ReceiveTabInvoice` widget that will be shown only when an invoice is generated. To show a QR code, we use the package `qr_flutter`, run `flutter pub add qr_flutter` to add it to the project. Under the QR and the `bip21Uri` as text, we add two buttons, one to go back to edit the input fields of the invoice again and one to copy the `bip21Uri` to the clipboard. The `ReceiveTabInvoice` widget will look like this:
+
+```dart
+class ReceiveTabInvoice extends StatelessWidget {
+  const ReceiveTabInvoice({
+    super.key,
+    required this.bip21Uri,
+    required this.editInvoiceHandler,
+  });
+
+  final String bip21Uri;
+  final Function() editInvoiceHandler;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // QR Code
+        QrImageView(
+          data: bip21Uri,
+        ),
+        const SizedBox(height: kSpacingUnit * 2),
+        // Invoice
+        Text(bip21Uri),
+        const SizedBox(height: kSpacingUnit * 2),
+        // Button Row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            // Edit Button
+            ElevatedButton.icon(
+              onPressed: editInvoiceHandler,
+              label: const Text('Edit'),
+              icon: const Icon(Icons.edit),
+            ),
+            // Copy Button
+            ElevatedButton.icon(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: bip21Uri)).then(
+                  (_) {
+                    // Optionally, show a confirmation message to the user.
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Invoice copied to clipboard!'),
+                      ),
+                    );
+                  },
+                );
+              },
+              label: const Text('Copy'),
+              icon: const Icon(Icons.copy),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+```
+
+As you will notice, the edit button is more of a clearing of the invoice than really being able to edit the existing values, since we are updating the state with an empty `ReceiveState` instance. To be able to keep the input fields values when the user goes back to edit the invoice, we will need to use the `TextEditingController` class to control the text in the input fields, and in the edit button handler, we should only clear the `bitcoinInvoice` field of the state. But this is something we will not do in the workshop, since it is not the main focus of the workshop and it is not that important for the UX. You can do it yourself as an exercise if you want.
+
+The only thing left now is passing down the `WalletService` to the `ReceiveTab` widget. First to the `WalletActionsBottomSheet` in the `HomeScreen` and then to the `ReceiveTab` widget in the `WalletActionsBottomSheet`:
+
+```dart
+// ... in the `HomeScreen` widget
+floatingActionButton: FloatingActionButton(
+  onPressed: () => showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    builder: (context) => WalletActionsBottomSheet(
+      bitcoinWalletService: widget.bitcoinWalletService, // Add this
+    ),
+  ),
+  child: SvgPicture.asset(
+    'assets/icons/in_out_arrows.svg',
+  ),
+),
+// ... rest of widget
+```
+
+In the `WalletActionsBottomSheet`:
+
+```dart
+class WalletActionsBottomSheet extends StatelessWidget {
+  const WalletActionsBottomSheet({
+    required WalletService bitcoinWalletService, // Add this
+    Key? key,
+  })  : _bitcoinWalletService = bitcoinWalletService, // Add this
+        super(key: key);
+
+  final WalletService _bitcoinWalletService; // Add this
+
+  static const List<Tab> actionTabs = <Tab>[
+    Tab(
+      icon: Icon(Icons.arrow_downward),
+      text: 'Receive funds',
+    ),
+    Tab(
+      icon: Icon(Icons.arrow_upward),
+      text: 'Send funds',
+    ),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: actionTabs.length,
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          actions: const [
+            CloseButton(),
+          ],
+          bottom: const TabBar(
+            tabs: actionTabs,
+          ),
+        ),
+        resizeToAvoidBottomInset: false,
+        body: Padding(
+          padding: const EdgeInsets.all(kSpacingUnit * 4),
+          child: TabBarView(
+            children: [
+              ReceiveTab(
+                bitcoinWalletService: _bitcoinWalletService, // Add this
+              ),
+              const SendTab(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+```
+
+If everything went well, you should be able to generate Bitcoin **Testnet** invoices and see the QR code and the text field with the invoice, like this when not passing any bip21 parameters:
+
+![Screenshot 2024-01-19 at 00 08 32](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/b5b52154-2067-4e59-809b-03fe7a6b640e)
+
+And like this when passing some bip21 parameters:
+
+![Screenshot 2024-01-19 at 00 09 46](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/a44e0dd0-225d-4907-bc71-eb66fff67d37)
+
+For the next step, let's make the transaction history dynamic with real data, so we can see the transactions sent to the addresses we generated.
+
 ### 4. Transaction history
 
 ### 5. Sending funds
@@ -1380,23 +1843,3 @@ The [Lightning Development Kit (LDK)](https://lightningdevkit.org) will be used 
 ## Workshop 3: Other Lightning libraries and Lightning Service Provider integration
 
 In this workshop, some other ways to embed a Lightning wallet, like [Breez SDK](https://sdk-doc.breez.technology/), will be shown and we will improve the UX (User eXperience) of the app by integrating with [Lightning Service Providers (LSP's)](https://github.com/BitcoinAndLightningLayerSpecs/lsp).
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
