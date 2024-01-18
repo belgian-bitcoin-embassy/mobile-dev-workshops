@@ -372,7 +372,7 @@ class TransactionsList extends StatelessWidget {
 }
 ```
 
-#### Floating button
+#### Wallet actions
 
 Now for the actions like receiving and sending we would want to do with a Bitcoin wallet, we will add a floating button that opens a bottom sheet modal with possible actions. For now, we will only add the options to receive and send bitcoin.
 
@@ -383,6 +383,7 @@ To add a floating button, just add the following to the `Scaffold` widget:
     floatingActionButton: FloatingActionButton(
         onPressed: () => showModalBottomSheet(
           context: context,
+          isScrollControlled: true,
           builder: (context) => const WalletActionsBottomSheet(),
         ),
         child: SvgPicture.asset(
@@ -423,11 +424,15 @@ class WalletActionsBottomSheet extends StatelessWidget {
             tabs: actionTabs,
           ),
         ),
-        body: TabBarView(
-          children: [
-            Container(),
-            Container(),
-          ],
+        resizeToAvoidBottomInset: false,
+        body: Padding(
+          padding: const EdgeInsets.all(kSpacingUnit * 4),
+          child: TabBarView(
+            children: [
+              const ReceiveTab(),
+              Container(),
+            ],
+          ),
         ),
       ),
     );
@@ -435,7 +440,200 @@ class WalletActionsBottomSheet extends StatelessWidget {
 }
 ```
 
-This widget will show a tab bar with two tabs, one for receiving and one for sending funds. For now, we will just show two empty containers, but in the next steps we will add the components and functionality to send and receive funds.
+This widget will show a tab bar with two tabs, one for receiving and one for sending funds. We will now replace the `Container` widgets with the actual widgets for receiving and sending funds.
+
+In the `lib/features/wallet_actions` folder, create a folder for the receive feature, called `receive`, and a folder for the send feature, called `send`. In the `receive` folder, create a file called `receive_tab.dart` and in the `send` folder, create a file called `send_tab.dart`.
+
+In the `receive_tab.dart` file we will create the widget `ReceiveTab`. A Bitcoin address itself doesn't encode any amount or label or description, but most Bitcoin wallets currently support the BIP21 URI scheme, which allows to pass a label, description and amount along with the address. This permits the reading wallet to pre-fill the amount and remember the paying user who and/or what he is paying for again. We will use this scheme to generate a QR code that can be scanned by other wallets to easily send funds. So the `ReceiveTab` widget will have a `TextField` for the amount, a `TextField` for the label and a `TextField` for the description or message.
+Aside from those input fields, we will need to be able to show an error message in case the amount is valid or if no wallet is available to generate an address for yet. At last we will need a button to confirm the input and generate the Bitcoin address. Adding these components to the `ReceiveTab` widget will look like this:
+
+```dart
+class ReceiveTab extends StatelessWidget {
+  const ReceiveTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const SizedBox(height: kSpacingUnit * 2),
+        // Amount Field
+        const SizedBox(
+          width: 250,
+          child: TextField(
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: 'Amount (optional)',
+              hintText: '0',
+              helperText: 'The amount you want to receive in BTC.',
+            ),
+            onChanged: null,
+          ),
+        ),
+        const SizedBox(height: kSpacingUnit * 2),
+        // Label Field
+        const SizedBox(
+          width: 250,
+          child: TextField(
+            decoration: InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: 'Label (optional)',
+              hintText: 'Alice',
+              helperText: 'A name the payer knows you by.',
+            ),
+            onChanged: null,
+          ),
+        ),
+        const SizedBox(height: kSpacingUnit * 2),
+        // Message Field
+        const SizedBox(
+          width: 250,
+          child: TextField(
+            decoration: InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: 'Message (optional)',
+              hintText: 'Payback for dinner.',
+              helperText: 'A note to the payer.',
+            ),
+            onChanged: null,
+          ),
+        ),
+        const SizedBox(height: kSpacingUnit * 2),
+        // Error message
+        const SizedBox(
+          height: kSpacingUnit * 2,
+          child: Text(
+            true
+                ? 'You need to create a wallet first.'
+                : false
+                    ? 'Please enter a valid amount.'
+                    : '',
+            style: TextStyle(
+              color: Colors.red,
+            ),
+          ),
+        ),
+        const SizedBox(height: kSpacingUnit * 2),
+        // Generate invoice Button
+        ElevatedButton.icon(
+          onPressed: null,
+          label: const Text('Generate invoice'),
+          icon: const Icon(Icons.qr_code),
+        ),
+      ],
+    );
+  }
+}
+```
+
+The `SendTab` widget will be very similar, it will have a `TextField` for the amount to send, a `TextField` for the address to send to, a `Slider` to select the fee rate, a `Text` widget to show any errors and a button to send the transaction. Implemented the `SendTab` widget will look like this:
+
+```dart
+class SendTab extends StatelessWidget {
+  const SendTab({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const SizedBox(height: kSpacingUnit * 2),
+        // Amount Field
+        const SizedBox(
+          width: 250,
+          child: TextField(
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: 'Amount',
+              hintText: '0',
+              helperText: 'The amount you want to send in BTC.',
+            ),
+            onChanged: null,
+          ),
+        ),
+        const SizedBox(height: kSpacingUnit * 2),
+        // Invoice Field
+        const SizedBox(
+          width: 250,
+          child: TextField(
+            decoration: InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: 'Invoice',
+              hintText: '1bc1q2c3...',
+              helperText: 'The invoice to pay.',
+            ),
+            onChanged: null,
+          ),
+        ),
+        const SizedBox(height: kSpacingUnit * 2),
+        // Fee rate slider
+        SizedBox(
+          width: 250,
+          child: Column(
+            children: [
+              const Slider(
+                value: 0.5,
+                onChanged: null,
+              ),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: kSpacingUnit * 2),
+                child: Text(
+                  'The fee rate (sat/vB) to pay for this transaction.',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: kSpacingUnit * 2),
+        // Error message
+        const SizedBox(
+          height: kSpacingUnit * 2,
+          child: Text(
+            false
+                ? 'Please enter a valid amount.'
+                : true
+                    ? 'Not enough funds available.'
+                    : false
+                        ? 'Please enter a valid invoice.'
+                        : '',
+            style: TextStyle(
+              color: Colors.red,
+            ),
+          ),
+        ),
+        const SizedBox(height: kSpacingUnit * 2),
+        // Send funds Button
+        ElevatedButton.icon(
+          onPressed: null,
+          label: const Text('Send funds'),
+          icon: const Icon(Icons.send),
+        ),
+      ],
+    );
+  }
+}
+```
+
+Now replace the `Container` widgets in the `WalletActionsBottomSheet` widget with the `ReceiveTab` and `SendTab` widgets:
+
+```dart
+// WalletActionsBottomSheet widget ...
+  TabBarView(
+    children: [
+      const ReceiveTab(),
+      const SendTab(),
+    ],
+  ),
+// ...
+```
 
 #### Wrap up
 
@@ -443,7 +641,9 @@ With this, we have the basic layout of our Bitcoin wallet app. It should look so
 
 ![Screenshot 2024-01-14 at 22 27 56](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/53016ef4-fd4e-4738-a002-fc745e413b6d)
 
-![Screenshot 2024-01-18 at 14 02 26](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/3384cd74-d8e4-4e29-a1b0-22169b15b5f6)
+![Screenshot 2024-01-18 at 22 36 06](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/5e02bf0b-98d7-4300-b5aa-9353f14275d3)
+
+![Screenshot 2024-01-18 at 22 36 20](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/4c742ee1-63a5-4f2b-97af-1925b4fbed98)
 
 All data is hardcoded for now, but in the next steps we will add the functionality to generate a new wallet and display the balance and transactions.
 

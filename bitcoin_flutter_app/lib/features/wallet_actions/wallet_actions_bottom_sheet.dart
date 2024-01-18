@@ -1,3 +1,6 @@
+import 'package:bitcoin_flutter_app/constants.dart';
+import 'package:bitcoin_flutter_app/features/wallet_actions/receive/receive_tab.dart';
+import 'package:bitcoin_flutter_app/features/wallet_actions/send/send_tab.dart';
 import 'package:flutter/material.dart';
 
 class WalletActionsBottomSheet extends StatelessWidget {
@@ -28,11 +31,15 @@ class WalletActionsBottomSheet extends StatelessWidget {
             tabs: actionTabs,
           ),
         ),
-        body: TabBarView(
-          children: [
-            Container(),
-            Container(),
-          ],
+        resizeToAvoidBottomInset: false,
+        body: const Padding(
+          padding: EdgeInsets.all(kSpacingUnit * 4),
+          child: TabBarView(
+            children: [
+              ReceiveTab(),
+              SendTab(),
+            ],
+          ),
         ),
       ),
     );

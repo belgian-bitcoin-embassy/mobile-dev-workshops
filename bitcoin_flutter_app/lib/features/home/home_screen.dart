@@ -56,6 +56,7 @@ class HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () => showModalBottomSheet(
           context: context,
+          isScrollControlled: true,
           builder: (context) => const WalletActionsBottomSheet(),
         ),
         child: SvgPicture.asset(
