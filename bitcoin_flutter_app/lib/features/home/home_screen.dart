@@ -27,6 +27,7 @@ class HomeScreen extends StatelessWidget {
       floatingActionButton: FloatingActionButton(
         onPressed: () => showModalBottomSheet(
           context: context,
+          isScrollControlled: true,
           builder: (context) => const WalletActionsBottomSheet(),
         ),
         child: SvgPicture.asset(
