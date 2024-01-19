@@ -1824,7 +1824,7 @@ We could do this on Testnet as we have configured as the network in our wallet, 
 If you haven't done so yet, download and install Polar from the official [website](https://lightningpolar.com/) or [github]
 (https://github.com/jamaljsr/polar) following the instructions for your operating system.
 
-This includes installing [Docker Desktop](https://www.docker.com/products/docker-desktop) for MacOs and Windows or [Docker Server](https://docs.docker.com/engine/install/#server) for Linux users, since Polar spins up de local regtest node in a Docker container.
+This includes installing [Docker Desktop](https://www.docker.com/products/docker-desktop) for MacOS and Windows or [Docker Server](https://docs.docker.com/engine/install/#server) for Linux users, since Polar spins up de local regtest node in a Docker container.
 
 ### 5. Transaction history
 
