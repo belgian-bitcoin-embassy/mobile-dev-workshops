@@ -51,8 +51,9 @@ In this workshop, we will set up a Flutter project and implement the basic funct
 - Generating a new wallet
 - Displaying the balance
 - Receiving a transaction
-- Sending a transaction
+- Testing locally with Polar
 - Displaying the transaction history
+- Sending a transaction
 
 And if time permits:
 
@@ -1813,13 +1814,25 @@ And like this when passing some bip21 parameters:
 
 ![Screenshot 2024-01-19 at 00 09 46](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/a44e0dd0-225d-4907-bc71-eb66fff67d37)
 
-For the next step, let's make the transaction history dynamic with real data, so we can see the transactions sent to the addresses we generated.
+### 4. Testing locally
 
-### 4. Transaction history
+Now that we can receive funds to our wallet, we should see the balance change when we send funds to the generated invoice.
+We could do this on Testnet as we have configured as the network in our wallet, but this would require us to get some Testnet coins first, which are not always easy to get and not unlimited to do as many tests as we want. Testing with real Bitcoin on Mainnet is also not a good idea, since we could lose our funds if we make a mistake and since we would be spending real money on fees innecesarily. Therefore, we will use a local Bitcoin node running in regtest mode to test our wallet. This way we can generate as many coins as we want and we can also control the block generation to be able to mine blocks on demand and see the transactions confirmed in the blockchain. We will use two tools for this, the first one is [Polar](https://lightningpolar.com) to spin up a local Bitcoin node in Regtest mode, and the second one is [Esplora](https://github.com/blockstream/electrs), a blockchain index engine to be able to query the blockchain data from our local node.
 
-### 5. Sending funds
+#### Setting up Polar
 
-### 6. Backup wallet
+If you haven't done so yet, download and install Polar from the official [website](https://lightningpolar.com/) or [github]
+(https://github.com/jamaljsr/polar) following the instructions for your operating system.
+
+This includes installing [Docker Desktop](https://www.docker.com/products/docker-desktop) for MacOs and Windows or [Docker Server](https://docs.docker.com/engine/install/#server) for Linux users, since Polar spins up de local regtest node in a Docker container.
+
+### 5. Transaction history
+
+### 6. Sending funds
+
+### 7. Backup wallet
+
+### 8. Recover wallet
 
 ## Workshop 2: Lightning Network wallet
 
