@@ -1,6 +1,6 @@
 import 'package:bitcoin_flutter_app/features/home/home_state.dart';
 import 'package:bitcoin_flutter_app/services/wallet_service.dart';
-import 'package:bitcoin_flutter_app/view_models/wallet_balance.dart';
+import 'package:bitcoin_flutter_app/view_models/wallet_balance_view_model.dart';
 
 class HomeController {
   final HomeState Function() _getState;
@@ -22,7 +22,7 @@ class HomeController {
     if ((_bitcoinWalletService as BitcoinWalletService).hasWallet) {
       _updateState(
         _getState().copyWith(
-          walletBalance: WalletBalance(
+          walletBalance: WalletBalanceViewModel(
             walletName: walletName,
             balanceSat: await _bitcoinWalletService.getSpendableBalanceSat(),
           ),
@@ -38,7 +38,7 @@ class HomeController {
       await _bitcoinWalletService.addWallet();
       _updateState(
         _getState().copyWith(
-          walletBalance: WalletBalance(
+          walletBalance: WalletBalanceViewModel(
             walletName: walletName,
             balanceSat: await _bitcoinWalletService.getSpendableBalanceSat(),
           ),

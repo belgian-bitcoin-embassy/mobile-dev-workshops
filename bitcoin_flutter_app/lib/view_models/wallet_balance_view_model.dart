@@ -2,8 +2,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
 @immutable
-class WalletBalance extends Equatable {
-  const WalletBalance({
+class WalletBalanceViewModel extends Equatable {
+  const WalletBalanceViewModel({
     required this.walletName,
     required this.balanceSat,
   });
