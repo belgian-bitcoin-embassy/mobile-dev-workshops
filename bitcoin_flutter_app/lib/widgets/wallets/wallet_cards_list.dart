@@ -1,5 +1,5 @@
 import 'package:bitcoin_flutter_app/constants.dart';
-import 'package:bitcoin_flutter_app/view_models/wallet_balance.dart';
+import 'package:bitcoin_flutter_app/view_models/wallet_balance_view_model.dart';
 import 'package:bitcoin_flutter_app/widgets/wallets/add_new_wallet_card.dart';
 import 'package:bitcoin_flutter_app/widgets/wallets/wallet_balance_card.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +12,7 @@ class WalletCardsList extends StatelessWidget {
     super.key,
   });
 
-  final List<WalletBalance> walletBalances;
+  final List<WalletBalanceViewModel> walletBalances;
   final VoidCallback onAddNewWallet;
   final VoidCallback onDeleteWallet;
 
