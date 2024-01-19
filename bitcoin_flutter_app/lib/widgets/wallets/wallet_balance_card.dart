@@ -1,5 +1,5 @@
 import 'package:bitcoin_flutter_app/constants.dart';
-import 'package:bitcoin_flutter_app/view_models/wallet_balance.dart';
+import 'package:bitcoin_flutter_app/view_models/wallet_balance_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -8,7 +8,7 @@ class WalletBalanceCard extends StatelessWidget {
       {required this.onDelete, Key? key})
       : super(key: key);
 
-  final WalletBalance walletBalance;
+  final WalletBalanceViewModel walletBalance;
   final VoidCallback onDelete;
 
   @override
