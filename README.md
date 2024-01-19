@@ -38,11 +38,17 @@ The app will be developed to run on both Android and iOS, so if you would like t
 
 Make sure that running `flutter doctor` in a terminal shows no errors, as described in the installation instructions.
 
-### Install Polar
+### Install Polar (and Docker Desktop/Server)
 
 Polar is a Bitcoin and Lightning Network development tool that makes it easy to run a local network of Bitcoin and Lightning test nodes and to interact with them or use them in the development of applications.
 
 Download from https://lightningpolar.com/ and follow the installation instructions for your operating system.
+
+Make sure you have [Docker Desktop](https://www.docker.com/products/docker-desktop) installed on Windows or MacOS and [Docker Server](https://docs.docker.com/engine/install/#server) on Linux, since the Polar app needs Docker to run the nodes.
+
+### Have git installed
+
+Since we will be using git to clone the workshop repository to have the same starting point again from time to time, make sure you have git installed on your system. You can follow instructions from [git-scm](https://git-scm.com/downloads) or [github](https://github.com/git-guides/install-git) to install it.
 
 ## Workshop 1: Project setup and Bitcoin on-chain wallet
 
