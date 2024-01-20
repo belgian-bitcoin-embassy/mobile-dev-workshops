@@ -77,11 +77,9 @@ class BitcoinWalletService implements WalletService {
 
   Future<void> _initBlockchain() async {
     _blockchain = await Blockchain.create(
-      config: const BlockchainConfig.electrum(
-        config: ElectrumConfig(
-          retry: 5,
-          url: "ssl://electrum.blockstream.info:60002",
-          validateDomain: false,
+      config: const BlockchainConfig.esplora(
+        config: EsploraConfig(
+          baseUrl: "http://10.0.2.2:3002",
           stopGap: 10,
         ),
       ),
@@ -93,7 +91,7 @@ class BitcoinWalletService implements WalletService {
     _wallet = await Wallet.create(
       descriptor: descriptors.$1,
       changeDescriptor: descriptors.$2,
-      network: Network.Testnet,
+      network: Network.Regtest,
       databaseConfig: const DatabaseConfig
           .memory(), // Txs and UTXOs related to the wallet will be stored in memory
     );
@@ -102,7 +100,7 @@ class BitcoinWalletService implements WalletService {
   Future<(Descriptor receive, Descriptor change)> _getBip84TemplateDescriptors(
     Mnemonic mnemonic,
   ) async {
-    const network = Network.Testnet;
+    const network = Network.Regtest;
     final secretKey =
         await DescriptorSecretKey.create(network: network, mnemonic: mnemonic);
     final receivingDescriptor = await Descriptor.newBip84(

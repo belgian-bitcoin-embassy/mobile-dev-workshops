@@ -1823,14 +1823,125 @@ And like this when passing some bip21 parameters:
 ### 4. Testing locally
 
 Now that we can receive funds to our wallet, we should see the balance change when we send funds to the generated invoice.
-We could do this on Testnet as we have configured as the network in our wallet, but this would require us to get some Testnet coins first, which are not always easy to get and not unlimited to do as many tests as we want. Testing with real Bitcoin on Mainnet is also not a good idea, since we could lose our funds if we make a mistake and since we would be spending real money on fees innecesarily. Therefore, we will use a local Bitcoin node running in regtest mode to test our wallet. This way we can generate as many coins as we want and we can also control the block generation to be able to mine blocks on demand and see the transactions confirmed in the blockchain. We will use two tools for this, the first one is [Polar](https://lightningpolar.com) to spin up a local Bitcoin node in Regtest mode, and the second one is [Esplora](https://github.com/blockstream/electrs), a blockchain index engine to be able to query the blockchain data from our local node.
+We could do this on Testnet as we have configured as the network in our wallet, but this would require us to get some Testnet coins first, which are not always easy to get and not unlimited to do as many tests as we want. Testing with real Bitcoin on Mainnet is also not a good idea, since we could lose our funds if we make a mistake and since we would be spending real money on fees innecesarily. Therefore, we will use a local Bitcoin node running in regtest mode to test our wallet. This way we can generate as many coins as we want and we can also control the block generation to be able to mine blocks on demand and see the transactions confirmed in the blockchain. We will use two tools for this, the first one is [Polar](https://lightningpolar.com) to spin up a local Bitcoin node in Regtest mode, and the second one is [Esplora](https://github.com/mempool/electrs), a blockchain index engine to be able to query the blockchain data from our local node.
 
-#### Setting up Polar
+#### Setting up a Bitcoin Regtest node with Polar
 
 If you haven't done so yet, download and install Polar from the official [website](https://lightningpolar.com/) or [github]
 (https://github.com/jamaljsr/polar) following the instructions for your operating system.
 
 This includes installing [Docker Desktop](https://www.docker.com/products/docker-desktop) for MacOS and Windows or [Docker Server](https://docs.docker.com/engine/install/#server) for Linux users, since Polar spins up de local regtest node in a Docker container.
+
+Once installed, open Polar and click on the `Create a Lightning Network` button.
+Since we are not integrating a Lightning node in our app yet, we will not use the Lightning node functionality of Polar now, so set all Lightning nodes (LND, Core Lightning and Eclair) to 0, and just leave the Bitcoin Core node at 1 before clicking on `Create Network`:
+
+![Screenshot 2024-01-19 at 14 51 02](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/17451970-bad9-4b36-945a-ad190e61fe3c)
+
+Now click the `Start` button and wait till the network is `Started` up. This should look something like this:
+
+![Screenshot 2024-01-19 at 14 55 07](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/6d1e6f85-710d-44f6-ae0f-0cc4d355efc6)
+
+We now have a local Bitcoin node running in regtest mode.
+
+#### Setting up Esplora Server
+
+To be able to connect to the Bitcoin node from the BDK library, an Electrum Server needs to run alongside the node, since the Polar node itself only exposes the Bitcoin Core RPC interface and not an Electrum RPC interface. To do this, we will use the Esplora Server implementation of mempool, named [electrs](https://github.com/mempool/electrs).
+
+To set it up, just clone the repo in a location of your preference with the following command, enter in the cloned folder and checkout the `mempool` branch:
+
+```bash
+git clone https://github.com/mempool/electrs && cd electrs
+git checkout mempool
+```
+
+Assuming the Rust toolchain is installed as required in the prerequisites, we can now run the server with the following command specifying the path to the `.bitcoin` directory of your Bitcoin Core node in Polar and specify the network, which is regtest:
+
+```bash
+cargo run --release --bin electrs -- -vvvv --daemon-dir ~/.polar/networks/1/volumes/bitcoind/backend1/ --network=regtest
+```
+
+If you already created more networks in Polar, the 1 in the path of the `--daemon-dir`` parameter might be different. To find the correct path, check out the Mounts in Docker for the Bitcoin Core (bitcoind) container. It should be the one mounted to the internal /home/bitcoin/.bitcoin path.
+
+If it is the first time you run it, first some dependencies will be downloaded and installed, but then the server should start and you should see something like this:
+
+```log
+DEBUG - Server listening on 127.0.0.1:24224
+DEBUG - Running accept thread
+...
+INFO - Electrum RPC server running on 127.0.0.1:60401
+INFO - REST server running on 127.0.0.1:3002
+```
+
+The HTTP REST server is what we need to connect to from the app. Check the port it is running on, in most cases it will be on port 3002, since it is the default port.
+We use this port to connect to the server from our app. In the `BitcoinWalletService` we will change the configurations of the `Blockchain` instance and change the network to `Network.Regtest` wherever we used `Network.Testnet` before.
+
+In production code, it would be better to extract these node configurations to a separate file and load them from there, so that we can easily switch between networks and nodes without having to change the code. But for now, we will just hardcode them in the `BitcoinWalletService` class. The `Blockchain` instance should now be initialized like this:
+
+```dart
+Future<void> _initBlockchain() async {
+  _blockchain = await Blockchain.create(
+    config: const BlockchainConfig.esplora(
+      config: EsploraConfig(
+        baseUrl: "http://10.0.2.2:3002",
+        stopGap: 10,
+      ),
+    ),
+  );
+}
+```
+
+And the `Wallet` instance and its descriptors should now be initialized with the `Network.Regtest` network:
+
+```dart
+Future<void> _initWallet(Mnemonic mnemonic) async {
+    final descriptors = await _getBip84TemplateDescriptors(mnemonic);
+    _wallet = await Wallet.create(
+      descriptor: descriptors.$1,
+      changeDescriptor: descriptors.$2,
+      network: Network.Regtest, // Changed here
+      databaseConfig: const DatabaseConfig
+          .memory(),
+    );
+  }
+
+  Future<(Descriptor receive, Descriptor change)> _getBip84TemplateDescriptors(
+    Mnemonic mnemonic,
+  ) async {
+    const network = Network.Regtest; // Changed here
+    final secretKey =
+        await DescriptorSecretKey.create(network: network, mnemonic: mnemonic);
+    final receivingDescriptor = await Descriptor.newBip84(
+        secretKey: secretKey,
+        network: network,
+        keychain: KeychainKind.External);
+    final changeDescriptor = await Descriptor.newBip84(
+        secretKey: secretKey,
+        network: network,
+        keychain: KeychainKind.Internal);
+
+    return (receivingDescriptor, changeDescriptor);
+  }
+```
+
+Now run the app, add a wallet if you don't have one yet and generate an invoice (receive address). Then go to the Polar app and in the `Actions` tab of the Bitcoin node, click on the `mine` button to mine some blocks and get some coins. Make sure you mine at least 100 blocks to have some coins that are mature and can be spent. You should see the balance change in the app when the blocks are mined and the transactions are confirmed:
+
+![Screenshot 2024-01-20 at 22 33 15](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/621f7a86-c35a-460f-8133-fa3bc058eb32)
+
+Then click on the button underneath saying `Send coins`. Now you can paste the Bitcoin invoice/address you generated in the app to send some coins to it. Make sure you have the box with `Automatically mine 6 blocks to confirm the transaction` checked and click on the `Send` button:
+
+![Screenshot 2024-01-20 at 23 51 51](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/c899eb6a-fd06-456a-8ac6-c947580e1830).
+
+We haven't implemented any streams to listen to incoming transactions yet, neither do we have a way to refresh the balance yet, we will implement the refresh action in the next step. For now, just restart the app and your wallet should now have the balance of the coins you sent to it:
+
+![Screenshot 2024-01-21 at 23 57 00](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/5a9e85fa-57f1-4963-953b-f9f4a7e84620).
+
+#### Refreshing the balance
+
+To be able to refresh the balance, we will add a new method to the `HomeController` class, which will make use of the `sync` method of the `BitcoinWalletService` class to obtain the latest balance from the blockchain:
+
+```dart
+
+```
 
 ### 5. Transaction history
 
