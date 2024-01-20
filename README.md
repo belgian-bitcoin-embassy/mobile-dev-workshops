@@ -1923,11 +1923,13 @@ Future<void> _initWallet(Mnemonic mnemonic) async {
   }
 ```
 
-Now run the app, add a wallet if you don't have one yet and generate an invoice (receive address). Then go to the Polar app and in the `Actions` tab of the Bitcoin node, click on the `mine` button to mine some blocks and get some coins. Make sure you mine at least 100 blocks to have some coins that are mature and can be spent. You should see the balance change in the app when the blocks are mined and the transactions are confirmed:
+Now run the app, add a wallet if you don't have one yet and generate an invoice (receive address).
+
+Then go to the Polar app and in the `Actions` tab of the Bitcoin node, click on the `mine` button to mine some blocks and get some coins. Make sure you mine at least 100 blocks to have some coins that are mature and can be spent. Then click on the button underneath saying `Send coins`:
 
 ![Screenshot 2024-01-20 at 22 33 15](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/621f7a86-c35a-460f-8133-fa3bc058eb32)
 
-Then click on the button underneath saying `Send coins`. Now you can paste the Bitcoin invoice/address you generated in the app to send some coins to it. Make sure you have the box with `Automatically mine 6 blocks to confirm the transaction` checked and click on the `Send` button:
+Now you can paste the Bitcoin invoice/address you generated in the app to send some coins to it. Make sure you have the box with `Automatically mine 6 blocks to confirm the transaction` checked and click on the `Send` button:
 
 ![Screenshot 2024-01-20 at 23 51 51](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/c899eb6a-fd06-456a-8ac6-c947580e1830).
 
