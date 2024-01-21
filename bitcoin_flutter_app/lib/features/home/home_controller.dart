@@ -58,9 +58,27 @@ class HomeController {
     }
   }
 
-  /*Future<void> refresh() async {
-    try {} catch (e) {
+  Future<void> refresh() async {
+    try {
+      final state = _getState();
+      if (state.walletBalance == null) {
+        // No wallet to refresh
+        return;
+      }
+
+      await (_bitcoinWalletService as BitcoinWalletService).sync();
+      final balance = await _bitcoinWalletService.getSpendableBalanceSat();
+      _updateState(
+        state.copyWith(
+          walletBalance: WalletBalanceViewModel(
+            walletName: state.walletBalance!.walletName,
+            balanceSat: balance,
+          ),
+        ),
+      );
+    } catch (e) {
       print(e);
+      // ToDo: handle and set error state
     }
-  }*/
+  }
 }

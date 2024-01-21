@@ -1933,17 +1933,57 @@ Now you can paste the Bitcoin invoice/address you generated in the app to send s
 
 ![Screenshot 2024-01-20 at 23 51 51](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/c899eb6a-fd06-456a-8ac6-c947580e1830).
 
-We haven't implemented any streams to listen to incoming transactions yet, neither do we have a way to refresh the balance yet, we will implement the refresh action in the next step. For now, just restart the app and your wallet should now have the balance of the coins you sent to it:
+We haven't implemented any streams to listen to incoming transactions yet, neither do we have a way to refresh the balance yet, we will implement the refresh action in the next step. For now, just restart the app and your wallet should now show the balance of the coins you sent to it:
 
 ![Screenshot 2024-01-21 at 23 57 00](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/5a9e85fa-57f1-4963-953b-f9f4a7e84620).
 
 #### Refreshing the balance
 
-To be able to refresh the balance, we will add a new method to the `HomeController` class, which will make use of the `sync` method of the `BitcoinWalletService` class to obtain the latest balance from the blockchain:
+To be able to refresh the balance, we will add a new method to the `HomeController` class, which will make use of the `sync` method of the `BitcoinWalletService` class to obtain the latest data from the blockchain:
 
 ```dart
+// Add to `HomeController` class
+Future<void> refresh() async {
+  try {
+    final state = _getState();
+    if (state.walletBalance == null) {
+      // No wallet to refresh
+      return;
+    }
 
+    await (_bitcoinWalletService as BitcoinWalletService).sync();
+    final balance = await _bitcoinWalletService.getSpendableBalanceSat();
+    _updateState(
+      state.copyWith(
+        walletBalance: WalletBalanceViewModel(
+          walletName: state.walletBalance!.walletName,
+          balanceSat: balance,
+        ),
+      ),
+    );
+  } catch (e) {
+    print(e);
+    // ToDo: handle and set error state
+  }
+}
 ```
+
+Flutter already has a `RefreshIndicator` widget that allows to call a refresh method when the user pulls down the screen. We will use this to call the `refresh` method of the `HomeController` when the user pulls down the `HomeScreen`. To do this, we will wrap the `SingleChildScrollView` in the `HomeScreen` with the `RefreshIndicator` widget and call the `refresh` method of the `HomeController` in the `onRefresh` callback:
+
+```dart
+// ... In `HomeScreen` widget
+body: RefreshIndicator(
+  onRefresh: () async {
+    await _controller.refresh();
+  },
+  child: SingleChildScrollView(
+    // ... rest of widget
+  ),
+),
+```
+
+That's it, now you should be able to pull down the `HomeScreen` to refresh the balance.
+Try it out by sending some more coins to your wallet and then pull down the `HomeScreen` to refresh the balance.
 
 ### 5. Transaction history
 

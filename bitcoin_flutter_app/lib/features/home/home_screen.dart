@@ -38,19 +38,24 @@ class HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(),
       endDrawer: const Drawer(),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            SizedBox(
-              height: kSpacingUnit * 24,
-              child: WalletCardsList(
-                _state.walletBalance == null ? [] : [_state.walletBalance!],
-                onAddNewWallet: _controller.addNewWallet,
-                onDeleteWallet: _controller.deleteWallet,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await _controller.refresh();
+        },
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              SizedBox(
+                height: kSpacingUnit * 24,
+                child: WalletCardsList(
+                  _state.walletBalance == null ? [] : [_state.walletBalance!],
+                  onAddNewWallet: _controller.addNewWallet,
+                  onDeleteWallet: _controller.deleteWallet,
+                ),
               ),
-            ),
-            const TransactionsList(),
-          ],
+              const TransactionsList(),
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
