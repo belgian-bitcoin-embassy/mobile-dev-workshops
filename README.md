@@ -46,6 +46,21 @@ Download from https://lightningpolar.com/ and follow the installation instructio
 
 Make sure you have [Docker Desktop](https://www.docker.com/products/docker-desktop) installed on Windows or MacOS and [Docker Server](https://docs.docker.com/engine/install/#server) on Linux, since the Polar app needs Docker to run the nodes.
 
+### Install Rust
+
+Alongside our Bitcoin node in Polar, we will need to run an Electrum server to be able to use the Bitcoin Development Kit (BDK) library. The Electrum server we will use is written in Rust, so we will need to install Rust to be able to run it.
+
+You can use rustup to install Rust, following the instructions on https://rustup.rs/.
+
+### clang, cmake and build-essential (Ubuntu only)
+
+If you are using Ubuntu, also run the following to be able to run the Electrum server:
+
+```bash
+$ sudo apt update
+$ sudo apt install clang cmake build-essential  # for building 'rust-rocksdb'
+```
+
 ### Have git installed
 
 Since we will be using git to clone the workshop repository to have the same starting point again from time to time, make sure you have git installed on your system. You can follow instructions from [git-scm](https://git-scm.com/downloads) or [github](https://github.com/git-guides/install-git) to install it.
