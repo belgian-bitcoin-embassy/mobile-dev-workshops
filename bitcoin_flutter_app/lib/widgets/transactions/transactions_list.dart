@@ -1,8 +1,11 @@
+import 'package:bitcoin_flutter_app/view_models/transactions_list_item_view_model.dart';
 import 'package:bitcoin_flutter_app/widgets/transactions/transaction_list_item.dart';
 import 'package:flutter/material.dart';
 
 class TransactionsList extends StatelessWidget {
-  const TransactionsList({super.key});
+  const TransactionsList({super.key, required this.transactions});
+
+  final List<TransactionsListItemViewModel> transactions;
 
   @override
   Widget build(BuildContext context) {
@@ -20,13 +23,15 @@ class TransactionsList extends StatelessWidget {
         ),
         ListView.builder(
           shrinkWrap:
-              true, // To set constraints on the ListView in an infinite height parent (SingleChildScrollView)
+              true, // To set constraints on the ListView in an infinite height parent (ListView in HomeScreen)
           physics:
-              const NeverScrollableScrollPhysics(), // Scrolling is handled by the parent (SingleChildScrollView)
+              const NeverScrollableScrollPhysics(), // Scrolling is handled by the parent (ListView in HomeScreen)
           itemBuilder: (ctx, index) {
-            return const TransactionListItem();
+            return TransactionListItem(
+              transaction: transactions[index],
+            );
           },
-          itemCount: 10,
+          itemCount: transactions.length,
         ),
       ],
     );

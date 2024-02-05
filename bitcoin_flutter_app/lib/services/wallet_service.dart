@@ -1,4 +1,5 @@
 import 'package:bdk_flutter/bdk_flutter.dart';
+import 'package:bitcoin_flutter_app/entities/transaction_entity.dart';
 import 'package:bitcoin_flutter_app/repositories/mnemonic_repository.dart';
 
 abstract class WalletService {
@@ -6,6 +7,7 @@ abstract class WalletService {
   Future<void> deleteWallet();
   Future<int> getSpendableBalanceSat();
   Future<String> generateInvoice();
+  Future<List<TransactionEntity>> getTransactions();
 }
 
 class BitcoinWalletService implements WalletService {
@@ -67,6 +69,20 @@ class BitcoinWalletService implements WalletService {
     );
 
     return invoice.address;
+  }
+
+  @override
+  Future<List<TransactionEntity>> getTransactions() async {
+    final transactions = await _wallet!.listTransactions(true);
+
+    return transactions.map((tx) {
+      return TransactionEntity(
+        id: tx.txid,
+        receivedAmountSat: tx.received,
+        sentAmountSat: tx.sent,
+        timestamp: tx.confirmationTime?.timestamp,
+      );
+    }).toList();
   }
 
   bool get hasWallet => _wallet != null;

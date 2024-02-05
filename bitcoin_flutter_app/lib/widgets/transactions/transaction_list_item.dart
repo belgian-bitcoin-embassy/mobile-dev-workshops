@@ -1,18 +1,31 @@
+import 'package:bitcoin_flutter_app/view_models/transactions_list_item_view_model.dart';
 import 'package:flutter/material.dart';
 
 class TransactionListItem extends StatelessWidget {
-  const TransactionListItem({Key? key}) : super(key: key);
+  const TransactionListItem({super.key, required this.transaction});
+
+  final TransactionsListItemViewModel transaction;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ListTile(
-      leading: const CircleAvatar(
-        child: Icon(Icons.arrow_downward),
+      leading: CircleAvatar(
+        child: Icon(
+          transaction.isIncoming ? Icons.arrow_downward : Icons.arrow_upward,
+        ),
       ),
-      title: Text('Received funds', style: theme.textTheme.titleMedium),
-      subtitle: Text('14-02-2021 12:00', style: theme.textTheme.bodySmall),
-      trailing: Text('+0.00000001 BTC', style: theme.textTheme.bodyMedium),
+      title: Text(
+        transaction.isIncoming ? 'Received funds' : 'Sent funds',
+        style: theme.textTheme.titleMedium,
+      ),
+      subtitle: Text(
+        transaction.formattedTimestamp,
+        style: theme.textTheme.bodySmall,
+      ),
+      trailing: Text(
+          '${transaction.isIncoming ? '+' : ''}${transaction.amountBtc} BTC',
+          style: theme.textTheme.bodyMedium),
     );
   }
 }
