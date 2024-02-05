@@ -144,17 +144,15 @@ Just add it with the following two lines in the Scaffold widget of the HomeScree
 
 We will use a horizontal list of balances of the wallets created in the app, so that we can easily add more wallets in the future, like Lightning, etc. For now, we will only have an on-chain Bitcoin wallet, but we will add a Lightning balance in the next workshop.
 
-In the `HomeScreen` widget, change the complete body for a `SingeChildScrollView` with a `Column` inside it. This will allow us to add different components one above the other and scroll if the screen is not big enough to show all of them.
+In the `HomeScreen` widget, change the complete body for a `ListView`. This will allow us to add different components one above the other and scroll if the screen is not big enough to show all of them.
 
 ```dart
 // In the Scaffold widget ...
-    body: SingleChildScrollView(
-      child: Column(
-        children: [
-          // ...
-        ],
-      ),
-    ),
+  body: ListView(
+    children: [
+        // ...
+    ],
+  ),
 ```
 
 The first component we will add is the list of balances. We will create a new widget for it, called `WalletCardsList`, and add it to the `Column` widget. The list will be a horizontal list, so it can grow unlimitedly and be scrolled horizontally if more wallets are added in the future.
@@ -170,15 +168,13 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(),
       endDrawer: const Drawer(),
-      body: const SingleChildScrollView(
-        child: Column(
-          children: [
-            SizedBox(
-              height: kSpacingUnit * 24,
-              child: WalletCardsList(),
-            ),
-          ],
-        ),
+      body: ListView(
+        children: const [
+          SizedBox(
+            height: kSpacingUnit * 24,
+            child: WalletCardsList(),
+          ),
+        ],
       ),
     );
   }
@@ -357,7 +353,7 @@ class TransactionListItem extends StatelessWidget {
 }
 ```
 
-The `TransactionsList` will be a `ListView` with scrolling disabled and `shrinkWrap` on true, since it should be placed in the Column of an already scrollable parent with infite height, the `SingleChildScrollView` of the `HomeScreen`. The `TransactionsList` widget will now look like this:
+The `TransactionsList` will be a `ListView` with scrolling disabled and `shrinkWrap` on true, since it will be placed in an already scrollable parent with infite height, the `ListView` of the `HomeScreen`. The `TransactionsList` widget will now look like this:
 
 ```dart
 class TransactionsList extends StatelessWidget {
@@ -379,9 +375,9 @@ class TransactionsList extends StatelessWidget {
         ),
         ListView.builder(
           shrinkWrap:
-              true, // To set constraints on the ListView in an infinite height parent (SingleChildScrollView)
+              true, // To set constraints on the ListView in an infinite height parent (ListView in HomeScreen)
           physics:
-              const NeverScrollableScrollPhysics(), // Scrolling is handled by the parent (SingleChildScrollView)
+              const NeverScrollableScrollPhysics(), // Scrolling is handled by the parent (ListView in HomeScreen)
           itemBuilder: (ctx, index) {
             return const TransactionListItem();
           },
@@ -965,18 +961,17 @@ class HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(),
       endDrawer: const Drawer(),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            SizedBox(
-              height: kSpacingUnit * 24,
-              child: WalletCardsList(
-                _state.walletBalance == null ? [] : [_state.walletBalance!], // Use the state here
-                onAddNewWallet: _controller.addNewWallet, // Added callback from the controller
-                onDeleteWallet: _controller.deleteWallet, // Added callback from the controller
-              ),
+      body: ListView(
+        children: [
+          SizedBox(
+            height: kSpacingUnit * 24,
+            child: WalletCardsList(
+              _state.walletBalance == null ? [] : [_state.walletBalance!], // Use the state here
+              onAddNewWallet: _controller.addNewWallet, // Added callback from the controller
+              onDeleteWallet: _controller.deleteWallet, // Added callback from the controller
             ),
-            // ... rest of the HomeScreen widget
+          ),
+          // ... rest of the HomeScreen widget
 ```
 
 And the `WalletCardsList`, `WalletBalanceCard` and `AddNewWalletCard` widgets will be updated as follow:
