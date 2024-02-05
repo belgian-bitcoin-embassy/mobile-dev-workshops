@@ -1,4 +1,4 @@
-import 'package:bitcoin_flutter_app/widgets/transactions/transaction_list_item.dart';
+import 'package:bitcoin_flutter_app/widgets/transactions/transactions_list_item.dart';
 import 'package:flutter/material.dart';
 
 class TransactionsList extends StatelessWidget {
@@ -24,7 +24,7 @@ class TransactionsList extends StatelessWidget {
           physics:
               const NeverScrollableScrollPhysics(), // Scrolling is handled by the parent (SingleChildScrollView)
           itemBuilder: (ctx, index) {
-            return const TransactionListItem();
+            return const TransactionsListItem();
           },
           itemCount: 10,
         ),
