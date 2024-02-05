@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class TransactionListItem extends StatelessWidget {
-  const TransactionListItem({Key? key}) : super(key: key);
+class TransactionsListItem extends StatelessWidget {
+  const TransactionsListItem({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
