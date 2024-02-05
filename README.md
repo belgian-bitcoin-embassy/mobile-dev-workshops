@@ -2291,7 +2291,7 @@ TransactionsList(
 
 Now you should be able to see the real transaction history in the `HomeScreen` when you run the app and have some transactions in your wallet:
 
-[Screenshot transaction history](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/b1a1a5e9-4a1c-4853-a9ae-5d4e26df1841)
+![Screenshot transaction history](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/b1a1a5e9-4a1c-4853-a9ae-5d4e26df1841)
 
 You can now test the app by receiving some more coins and then refresh or restart the app to see the new transactions appear in the list.
 
