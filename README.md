@@ -333,11 +333,11 @@ You can play with the count variable to see how the list grows horizontally and 
 
 #### Transaction history
 
-To show the transaction history, we will create a new widget called `TransactionsList` that vertically lists `TransactionListItems` for every transaction that was done with the wallet. Place both in a new folder `lib/widgets/transactions`. The `TransactionListItem` will just be a List tile with a leading icon to show the direction of the transaction, a description and the time of the transaction and an amount:
+To show the transaction history, we will create a new widget called `TransactionsList` that vertically lists `TransactionsListItems` for every transaction that was done with the wallet. Place both in a new folder `lib/widgets/transactions`. The `TransactionsListItem` will just be a List tile with a leading icon to show the direction of the transaction, a description and the time of the transaction and an amount:
 
 ```dart
-class TransactionListItem extends StatelessWidget {
-  const TransactionListItem({Key? key}) : super(key: key);
+class TransactionsListItem extends StatelessWidget {
+  const TransactionsListItem({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -380,7 +380,7 @@ class TransactionsList extends StatelessWidget {
           physics:
               const NeverScrollableScrollPhysics(), // Scrolling is handled by the parent (ListView in HomeScreen)
           itemBuilder: (ctx, index) {
-            return const TransactionListItem();
+            return const TransactionsListItem();
           },
           itemCount: 10,
         ),
@@ -2106,11 +2106,11 @@ class TransactionsListItemViewModel extends Equatable {
 }
 ```
 
-We can now change the hardcoded data in the widget to use data of a view model instead. Add a field and parameter to `TransactionListItem` widget and use it to show the data in the UI:
+We can now change the hardcoded data in the widget to use data of a view model instead. Add a field and parameter to `TransactionsListItem` widget and use it to show the data in the UI:
 
 ```dart
-class TransactionListItem extends StatelessWidget {
-  const TransactionListItem({super.key, required this.transaction}); // Add the transaction parameter
+class TransactionsListItem extends StatelessWidget {
+  const TransactionsListItem({super.key, required this.transaction}); // Add the transaction parameter
 
   final TransactionsListItemViewModel transaction; // Add this
 
@@ -2139,7 +2139,7 @@ class TransactionListItem extends StatelessWidget {
 }
 ```
 
-Now the `TransactionList` widget should also be updated to have a list of `TransactionsListItemViewModel` instances as a parameter and use them to build the list of the transactions dynamically. The `itemCount` of the list should be the length of the list of view models and the `itemBuilder` should take the view model at the current index to build the `TransactionListItem` widget:
+Now the `TransactionList` widget should also be updated to have a list of `TransactionsListItemViewModel` instances as a parameter and use them to build the list of the transactions dynamically. The `itemCount` of the list should be the length of the list of view models and the `itemBuilder` should take the view model at the current index to build the `TransactionsListItem` widget:
 
 ```dart
 class TransactionsList extends StatelessWidget {
@@ -2167,7 +2167,7 @@ class TransactionsList extends StatelessWidget {
           physics:
               const NeverScrollableScrollPhysics(),
           itemBuilder: (ctx, index) {
-            return TransactionListItem(
+            return TransactionsListItem(
               transaction: transactions[index], // Get the view model at the current index
             );
           },

@@ -1,8 +1,8 @@
 import 'package:bitcoin_flutter_app/view_models/transactions_list_item_view_model.dart';
 import 'package:flutter/material.dart';
 
-class TransactionListItem extends StatelessWidget {
-  const TransactionListItem({super.key, required this.transaction});
+class TransactionsListItem extends StatelessWidget {
+  const TransactionsListItem({super.key, required this.transaction});
 
   final TransactionsListItemViewModel transaction;
 
