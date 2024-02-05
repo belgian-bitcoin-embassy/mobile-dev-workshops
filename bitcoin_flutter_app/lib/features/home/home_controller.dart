@@ -89,11 +89,14 @@ class HomeController {
   }
 
   Future<List<TransactionsListItemViewModel>> _getTransactions() async {
+    // Get transaction entities from the wallet
     final transactionEntities = await _bitcoinWalletService.getTransactions();
+    // Map transaction entities to view models
     final transactions = transactionEntities
         .map((entity) =>
             TransactionsListItemViewModel.fromTransactionEntity(entity))
         .toList();
+    // Sort transactions by timestamp in descending order
     transactions.sort((t1, t2) => t2.timestamp.compareTo(t1.timestamp));
     return transactions;
   }

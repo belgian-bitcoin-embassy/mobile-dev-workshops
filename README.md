@@ -2216,24 +2216,37 @@ class HomeState extends Equatable {
 }
 ```
 
+In the `HomeController` class, create a private method `_getTransactions` to fetch the transactions from the `BitcoinWalletService`, map them to the view models and sort them by timestamp in descending order as needed for the UI as BDK does not guarantee the order of the transactions in the list it returns:
+
+```dart
+Future<List<TransactionsListItemViewModel>> _getTransactions() async {
+  // Get transaction entities from the wallet
+  final transactionEntities = await _bitcoinWalletService.getTransactions();
+  // Map transaction entities to view models
+  final transactions = transactionEntities
+      .map((entity) =>
+          TransactionsListItemViewModel.fromTransactionEntity(entity))
+      .toList();
+  // Sort transactions by timestamp in descending order
+  transactions.sort((t1, t2) => t2.timestamp.compareTo(t1.timestamp));
+  return transactions;
+}
+```
+
 As with the balance of the wallet, the transaction history should be fetched when the home screen is initialized and when the user pulls down the screen to refresh the data.
-So in the `init` and `refresh` methods of the `HomeController` we can call the `getTransactions` method of the `BitcoinWalletService` and update the state with the fetched data:
+So in the `init` and `refresh` methods of the `HomeController` we can call our recently created `_getTransactions` function to add the transactions list to the state:
 
 ```dart
 // ... in `HomeController` class
 Future<void> init() async {
   if ((_bitcoinWalletService as BitcoinWalletService).hasWallet) {
-    final transactionEntities = await _bitcoinWalletService.getTransactions(); // Add this
     _updateState(
       _getState().copyWith(
         walletBalance: WalletBalanceViewModel(
           walletName: walletName,
           balanceSat: await _bitcoinWalletService.getSpendableBalanceSat(),
         ),
-        transactions: transactionEntities
-            .map((entity) =>
-                TransactionsListItemViewModel.fromTransactionEntity(entity))
-            .toList(), // Add this
+        transactions: _getTransactions(), // Add this
       ),
     );
   } else {
@@ -2253,17 +2266,13 @@ Future<void> refresh() async {
 
     await (_bitcoinWalletService as BitcoinWalletService).sync();
     final balance = await _bitcoinWalletService.getSpendableBalanceSat();
-    final transactionEntities = await _bitcoinWalletService.getTransactions(); // Add this
     _updateState(
       state.copyWith(
         walletBalance: WalletBalanceViewModel(
           walletName: state.walletBalance!.walletName,
           balanceSat: balance,
         ),
-        transactions: transactionEntities
-            .map((entity) =>
-                TransactionsListItemViewModel.fromTransactionEntity(entity))
-            .toList(), // Add this
+        transactions: await _getTransactions(), // Add this
       ),
     );
   } catch (e) {
@@ -2293,6 +2302,8 @@ You can now test the app by receiving some more coins and then refresh or restar
 
 In a production app, you could set up some streams or other way to refresh automatically when a new transaction was send or arrived. You would also want to add a way to load more transactions when the user scrolls to the bottom of the list, since the list of transactions can be very long and we don't want to load all of them at once. Also while the transactions and balance fetching is in process, you could add a loading indicator. To keep our focus on the Bitcoin functionalities and the BDK library, these are all things we will not do in this workshop, but you can do it yourself as an exercise if you want.
 
+For now we will continue with our final part of this first workshop and finish our on-chain Bitcoin wallet by adding the ability to send funds.
+
 ### 6. Sending funds
 
 ### 7. Backup wallet
@@ -2321,18 +2332,3 @@ The [Lightning Development Kit (LDK)](https://lightningdevkit.org) will be used 
 ## Workshop 3: Other Lightning libraries and Lightning Service Provider integration
 
 In this workshop, some other ways to embed a Lightning wallet, like [Breez SDK](https://sdk-doc.breez.technology/), will be shown and we will improve the UX (User eXperience) of the app by integrating with [Lightning Service Providers (LSP's)](https://github.com/BitcoinAndLightningLayerSpecs/lsp).
-
-````
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-````
