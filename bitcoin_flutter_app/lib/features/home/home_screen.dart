@@ -13,16 +13,14 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(),
       endDrawer: const Drawer(),
-      body: const SingleChildScrollView(
-        child: Column(
-          children: [
-            SizedBox(
-              height: kSpacingUnit * 24,
-              child: WalletCardsList(),
-            ),
-            TransactionsList(),
-          ],
-        ),
+      body: ListView(
+        children: const [
+          SizedBox(
+            height: kSpacingUnit * 24,
+            child: WalletCardsList(),
+          ),
+          TransactionsList(),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => showModalBottomSheet(
