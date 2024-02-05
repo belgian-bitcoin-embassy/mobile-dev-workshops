@@ -24,7 +24,7 @@ class TransactionsList extends StatelessWidget {
           physics:
               const NeverScrollableScrollPhysics(), // Scrolling is handled by the parent (SingleChildScrollView)
           itemBuilder: (ctx, index) {
-            return const TransactionListItem();
+            return const TransactionsListItem();
           },
           itemCount: 10,
         ),
