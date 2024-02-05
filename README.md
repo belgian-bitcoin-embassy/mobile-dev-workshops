@@ -961,18 +961,17 @@ class HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(),
       endDrawer: const Drawer(),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            SizedBox(
-              height: kSpacingUnit * 24,
-              child: WalletCardsList(
-                _state.walletBalance == null ? [] : [_state.walletBalance!], // Use the state here
-                onAddNewWallet: _controller.addNewWallet, // Added callback from the controller
-                onDeleteWallet: _controller.deleteWallet, // Added callback from the controller
-              ),
+      body: ListView(
+        children: [
+          SizedBox(
+            height: kSpacingUnit * 24,
+            child: WalletCardsList(
+              _state.walletBalance == null ? [] : [_state.walletBalance!], // Use the state here
+              onAddNewWallet: _controller.addNewWallet, // Added callback from the controller
+              onDeleteWallet: _controller.deleteWallet, // Added callback from the controller
             ),
-            // ... rest of the HomeScreen widget
+          ),
+          // ... rest of the HomeScreen widget
 ```
 
 And the `WalletCardsList`, `WalletBalanceCard` and `AddNewWalletCard` widgets will be updated as follow:
