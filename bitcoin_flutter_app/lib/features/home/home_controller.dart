@@ -1,5 +1,6 @@
 import 'package:bitcoin_flutter_app/features/home/home_state.dart';
 import 'package:bitcoin_flutter_app/services/wallet_service.dart';
+import 'package:bitcoin_flutter_app/view_models/transactions_list_item_view_model.dart';
 import 'package:bitcoin_flutter_app/view_models/wallet_balance_view_model.dart';
 
 class HomeController {
@@ -26,10 +27,14 @@ class HomeController {
             walletName: walletName,
             balanceSat: await _bitcoinWalletService.getSpendableBalanceSat(),
           ),
+          transactions: await _getTransactions(),
         ),
       );
     } else {
-      _updateState(_getState().copyWith(clearWalletBalance: true));
+      _updateState(_getState().copyWith(
+        clearWalletBalance: true,
+        transactions: [],
+      ));
     }
   }
 
@@ -74,11 +79,25 @@ class HomeController {
             walletName: state.walletBalance!.walletName,
             balanceSat: balance,
           ),
+          transactions: await _getTransactions(),
         ),
       );
     } catch (e) {
       print(e);
       // ToDo: handle and set error state
     }
+  }
+
+  Future<List<TransactionsListItemViewModel>> _getTransactions() async {
+    // Get transaction entities from the wallet
+    final transactionEntities = await _bitcoinWalletService.getTransactions();
+    // Map transaction entities to view models
+    final transactions = transactionEntities
+        .map((entity) =>
+            TransactionsListItemViewModel.fromTransactionEntity(entity))
+        .toList();
+    // Sort transactions by timestamp in descending order
+    transactions.sort((t1, t2) => t2.timestamp.compareTo(t1.timestamp));
+    return transactions;
   }
 }

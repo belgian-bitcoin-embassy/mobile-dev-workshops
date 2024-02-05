@@ -2002,6 +2002,308 @@ Try it out by sending some more coins to your wallet and then pull down the `Hom
 
 ### 5. Transaction history
 
+Now that we have some receiving transactions, we can use them to make the transaction history have real and dynamic data. For this we will add a new method to the `BitcoinWalletService` class `getTransactions` to obtain the transaction history:
+
+```dart
+abstract class WalletService {
+  Future<void> addWallet();
+  Future<void> deleteWallet();
+  Future<int> getSpendableBalanceSat();
+  Future<String> generateInvoice();
+  Future<List<TransactionEntity>> getTransactions(); // Add this
+}
+```
+
+As you see we want it to return a List of transactions as `TransactionEntity` instances. We will create a new `TransactionEntity` class to hold the transaction data as we receive it from the blockchain. Create a folder called `entities` in the `lib` folder and create a new file called `transaction_entity.dart` in it.
+We will not keep track of all fields or data of a transaction for now, but just the most basic fields like: transaction id, the amount of received utxo's, the amount of sent utxo's and the confirmation time. We will structure this data as follow:
+
+```dart
+@immutable
+class TransactionEntity extends Equatable {
+  final String id;
+  final int receivedAmountSat;
+  final int sentAmountSat;
+  final int? timestamp;
+
+  const TransactionEntity({
+    required this.id,
+    this.receivedAmountSat = 0,
+    this.sentAmountSat = 0,
+    required this.timestamp,
+  });
+
+  @override
+  List<Object?> get props => [
+        id,
+        receivedAmountSat,
+        sentAmountSat,
+        timestamp,
+      ];
+}
+```
+
+Since we will use this `TransactionEntity` in the future for other types of transactions, for example to get the history of Lightning payments, we put the default value for `receivedAmountSat` and `sentAmountSat` to 0, since in Lightning payments there is no concept of received and sent utxo's in a single transaction, but just of received or sent amounts.
+
+Now we can add a concrete implementation of the `getTransactions` method to the `BitcoinWalletService` class. We will use the `listTransactions` method of our BDK `Wallet` instance to obtain the transactions and map them to our own `TransactionEntity` instances to not depend too much on the BDK library in the rest of the app:
+
+```dart
+@override
+  Future<List<TransactionEntity>> getTransactions() async {
+    final transactions = await _wallet!.listTransactions(true);
+
+    return transactions.map((tx) {
+      return TransactionEntity(
+        id: tx.txid,
+        receivedAmountSat: tx.received,
+        sentAmountSat: tx.sent,
+        timestamp: tx.confirmationTime?.timestamp,
+      );
+    }).toList();
+  }
+```
+
+With that we can fetch the transaction history we need. Now we need to show that data in the UI. We previously created a widget for an item in the transaction list already, but it uses hardcoded mock data. Let's add a new view model to represent the data of a transaction that we want to show in this widget. Taking a look at the widget again, we need to show the following data dynamically for each transaction in the list:
+
+- An arrow icon, pointing up or down, depending on if the user received or sent out more funds in the transaction.
+- A title, also depending on if the user received more funds or sent out more funds in the transaction.
+- A subtitle with the date and time of the transaction.
+- The transaction amount positive or negative, depending on if the user received or sent out more funds in the transaction. It should be denominated in BTC for now.
+
+Both the arrow icon and the title can be derived from the amount, since the direction of the transaction can be derived from it. So we only need one field for the amount in the view model instead of a separate one for the icon and title. We also do not need a separate field for the direction of the transaction, but we can add getter functions `isIncoming` and `isOutgoing` to the view model to derive this from the amount.
+
+The view model should have an identifier of the transaction, this can be the same transaction id as the entity. Also the timestamp can be obtained from the timestamp of the entities we receive from the blockchain. The amount can be derived from the `receivedAmountSat` and `sentAmountSat` fields of the entity and we can add a getter again to convert it from sats to BTC. We can add a constructor to create the view model from a `TransactionEntity` instance, so we can easily map the entities to the view models.
+
+The timestamp should be shown in a human readable format, so we can add another getter function to the view model to format the timestamp to a string.
+
+Taking all of the above into account, create a file `transactions_list_item_view_model.dart` in the `view_models` folder and add the class `TransactionsListItemViewModel` with its fields and methods like this:
+
+```dart
+import 'package:bitcoin_flutter_app/entities/transaction_entity.dart';
+import 'package:equatable/equatable.dart';
+
+class TransactionsListItemViewModel extends Equatable {
+  final String id;
+  final int amountSat;
+  final int timestamp;
+
+  const TransactionsListItemViewModel({
+    required this.id,
+    required this.amountSat,
+    required this.timestamp,
+  });
+
+  TransactionsListItemViewModel.fromTransactionEntity(TransactionEntity entity)
+      : id = entity.id,
+        amountSat = entity.receivedAmountSat - entity.sentAmountSat,
+        timestamp = entity.timestamp!;
+
+  bool get isIncoming => amountSat > 0;
+  bool get isOutgoing => amountSat < 0;
+  double get amountBtc => amountSat / 100000000;
+
+  String get formattedTimestamp {
+    final date = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}';
+  }
+
+  @override
+  List<Object?> get props => [id, amountSat, timestamp];
+}
+```
+
+We can now change the hardcoded data in the widget to use data of a view model instead. Add a field and parameter to `TransactionListItem` widget and use it to show the data in the UI:
+
+```dart
+class TransactionListItem extends StatelessWidget {
+  const TransactionListItem({super.key, required this.transaction}); // Add the transaction parameter
+
+  final TransactionsListItemViewModel transaction; // Add this
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListTile(
+      leading: CircleAvatar(
+        child: Icon(
+          transaction.isIncoming ? Icons.arrow_downward : Icons.arrow_upward, // Use the view model data
+        ),
+      ),
+      title: Text(
+        transaction.isIncoming ? 'Received funds' : 'Sent funds', // Use the view model data
+        style: theme.textTheme.titleMedium,
+      ),
+      subtitle: Text(
+        transaction.formattedTimestamp, // Use the view model data
+        style: theme.textTheme.bodySmall,
+      ),
+      trailing: Text(
+          '${transaction.isIncoming ? '+' : ''}${transaction.amountBtc} BTC', // Use the view model data
+          style: theme.textTheme.bodyMedium),
+    );
+  }
+}
+```
+
+Now the `TransactionList` widget should also be updated to have a list of `TransactionsListItemViewModel` instances as a parameter and use them to build the list of the transactions dynamically. The `itemCount` of the list should be the length of the list of view models and the `itemBuilder` should take the view model at the current index to build the `TransactionListItem` widget:
+
+```dart
+class TransactionsList extends StatelessWidget {
+  const TransactionsList({super.key, required this.transactions}); // Add the transactions parameter
+
+  final List<TransactionsListItemViewModel> transactions; // Add this
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Transactions',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+        ),
+        ListView.builder(
+          shrinkWrap:
+              true,
+          physics:
+              const NeverScrollableScrollPhysics(),
+          itemBuilder: (ctx, index) {
+            return TransactionListItem(
+              transaction: transactions[index], // Get the view model at the current index
+            );
+          },
+          itemCount: transactions.length, // Use the length of the list of view models
+        ),
+      ],
+    );
+  }
+}
+```
+
+Now the `HomeScreen` widget should be able to obtain the transactions from the `BitcoinWalletService` to pass it to the `TransactionsList` widget. This is where our state and controller comes in again to connect the data and logic with the UI. The controller updates the state with the data from the service and the UI consumes the data from the state.
+
+First, let's add a field to the `HomeState` class to hold the fetched list of transactions:
+
+```dart
+@immutable
+class HomeState extends Equatable {
+  const HomeState({
+    this.walletBalance,
+    this.transactions = const [], // Add this
+  });
+
+  final WalletBalanceViewModel? walletBalance;
+  final List<TransactionsListItemViewModel> transactions; // Add this
+
+  HomeState copyWith({
+    WalletBalanceViewModel? walletBalance,
+    bool clearWalletBalance = false,
+    List<TransactionsListItemViewModel>? transactions, // Add this
+  }) {
+    return HomeState(
+      walletBalance:
+          clearWalletBalance ? null : walletBalance ?? this.walletBalance,
+      transactions: transactions ?? this.transactions, // Add this
+    );
+  }
+
+  @override
+  List<Object?> get props => [walletBalance, transactions]; // Add transactions to the props
+}
+```
+
+In the `HomeController` class, create a private method `_getTransactions` to fetch the transactions from the `BitcoinWalletService`, map them to the view models and sort them by timestamp in descending order as needed for the UI as BDK does not guarantee the order of the transactions in the list it returns:
+
+```dart
+Future<List<TransactionsListItemViewModel>> _getTransactions() async {
+  // Get transaction entities from the wallet
+  final transactionEntities = await _bitcoinWalletService.getTransactions();
+  // Map transaction entities to view models
+  final transactions = transactionEntities
+      .map((entity) =>
+          TransactionsListItemViewModel.fromTransactionEntity(entity))
+      .toList();
+  // Sort transactions by timestamp in descending order
+  transactions.sort((t1, t2) => t2.timestamp.compareTo(t1.timestamp));
+  return transactions;
+}
+```
+
+As with the balance of the wallet, the transaction history should be fetched when the home screen is initialized and when the user pulls down the screen to refresh the data.
+So in the `init` and `refresh` methods of the `HomeController` we can call our recently created `_getTransactions` function to add the transactions list to the state:
+
+```dart
+// ... in `HomeController` class
+Future<void> init() async {
+  if ((_bitcoinWalletService as BitcoinWalletService).hasWallet) {
+    _updateState(
+      _getState().copyWith(
+        walletBalance: WalletBalanceViewModel(
+          walletName: walletName,
+          balanceSat: await _bitcoinWalletService.getSpendableBalanceSat(),
+        ),
+        transactions: _getTransactions(), // Add this
+      ),
+    );
+  } else {
+    _updateState(_getState().copyWith(
+      clearWalletBalance: true,
+      transactions: [], // Add this
+    ));
+  }
+}
+// ... rest of class
+Future<void> refresh() async {
+  try {
+    final state = _getState();
+    if (state.walletBalance == null) {
+      return;
+    }
+
+    await (_bitcoinWalletService as BitcoinWalletService).sync();
+    final balance = await _bitcoinWalletService.getSpendableBalanceSat();
+    _updateState(
+      state.copyWith(
+        walletBalance: WalletBalanceViewModel(
+          walletName: state.walletBalance!.walletName,
+          balanceSat: balance,
+        ),
+        transactions: await _getTransactions(), // Add this
+      ),
+    );
+  } catch (e) {
+    print(e);
+  }
+}
+// ... rest of class
+```
+
+You can observe that we map the entities to the view models in the `init` and `refresh` methods and update the state with the list of view models. This is because we want to keep the entities as close to the data we receive from the blockchain as possible and only convert it to view models when we need to show it in the UI. This way we can easily change the view model without having to change the entities and the other way around. Our constructor `fromTransactionEntity` in our `TransactionsListItemViewModel` comes in handy here to easily map the entities to the view models.
+
+With this in place, our transaction history is ready in the state to be consumed by the UI, only thing left is updating the `TransactionsList` in the `HomeScreen`:
+
+```dart
+// ... in `HomeScreen` widget
+TransactionsList(
+  transactions: _state.transactions, // Add this
+),
+// ... rest of widget
+```
+
+Now you should be able to see the real transaction history in the `HomeScreen` when you run the app and have some transactions in your wallet:
+
+[Screenshot transaction history](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/b1a1a5e9-4a1c-4853-a9ae-5d4e26df1841)
+
+You can now test the app by receiving some more coins and then refresh or restart the app to see the new transactions appear in the list.
+
+In a production app, you could set up some streams or other way to refresh automatically when a new transaction was send or arrived. You would also want to add a way to load more transactions when the user scrolls to the bottom of the list, since the list of transactions can be very long and we don't want to load all of them at once. Also while the transactions and balance fetching is in process, you could add a loading indicator. To keep our focus on the Bitcoin functionalities and the BDK library, these are all things we will not do in this workshop, but you can do it yourself as an exercise if you want.
+
+For now we will continue with our final part of this first workshop and finish our on-chain Bitcoin wallet by adding the ability to send funds.
+
 ### 6. Sending funds
 
 ### 7. Backup wallet
