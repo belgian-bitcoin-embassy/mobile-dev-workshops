@@ -1978,7 +1978,7 @@ Future<void> refresh() async {
 }
 ```
 
-Flutter already has a `RefreshIndicator` widget that allows to call a refresh method when the user pulls down the screen. We will use this to call the `refresh` method of the `HomeController` when the user pulls down the `HomeScreen`. To do this, we will wrap the `SingleChildScrollView` in the `HomeScreen` with the `RefreshIndicator` widget and call the `refresh` method of the `HomeController` in the `onRefresh` callback:
+Flutter already has a `RefreshIndicator` widget that allows to call a refresh method when the user pulls down the screen. We will use this to call the `refresh` method of the `HomeController` when the user pulls down the `HomeScreen`. To do this, we will wrap the `body` of the `HomeScreen` with the `RefreshIndicator` widget and call the `refresh` method of the `HomeController` in the `onRefresh` callback:
 
 ```dart
 // ... In `HomeScreen` widget
@@ -1986,7 +1986,7 @@ body: RefreshIndicator(
   onRefresh: () async {
     await _controller.refresh();
   },
-  child: SingleChildScrollView(
+  child: ListView(
     // ... rest of widget
   ),
 ),
