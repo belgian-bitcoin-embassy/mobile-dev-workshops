@@ -145,17 +145,15 @@ Just add it with the following two lines in the Scaffold widget of the HomeScree
 
 We will use a horizontal list of balances of the wallets created in the app, so that we can easily add more wallets in the future, like Lightning, etc. For now, we will only have an on-chain Bitcoin wallet, but we will add a Lightning balance in the next workshop.
 
-In the `HomeScreen` widget, change the complete body for a `SingeChildScrollView` with a `Column` inside it. This will allow us to add different components one above the other and scroll if the screen is not big enough to show all of them.
+In the `HomeScreen` widget, change the complete body for a `ListView`. This will allow us to add different components one above the other and scroll if the screen is not big enough to show all of them.
 
 ```dart
 // In the Scaffold widget ...
-    body: SingleChildScrollView(
-      child: Column(
-        children: [
-          // ...
-        ],
-      ),
-    ),
+  body: ListView(
+    children: [
+        // ...
+    ],
+  ),
 ```
 
 The first component we will add is the list of balances. We will create a new widget for it, called `WalletCardsList`, and add it to the `Column` widget. The list will be a horizontal list, so it can grow unlimitedly and be scrolled horizontally if more wallets are added in the future.
@@ -171,15 +169,13 @@ class HomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(),
       endDrawer: const Drawer(),
-      body: const SingleChildScrollView(
-        child: Column(
-          children: [
-            SizedBox(
-              height: kSpacingUnit * 24,
-              child: WalletCardsList(),
-            ),
-          ],
-        ),
+      body: ListView(
+        children: const [
+          SizedBox(
+            height: kSpacingUnit * 24,
+            child: WalletCardsList(),
+          ),
+        ],
       ),
     );
   }
@@ -337,11 +333,11 @@ You can play with the count variable to see how the list grows horizontally and 
 
 #### Transaction history
 
-To show the transaction history, we will create a new widget called `TransactionsList` that vertically lists `TransactionListItems` for every transaction that was done with the wallet. Place both in a new folder `lib/widgets/transactions`. The `TransactionListItem` will just be a List tile with a leading icon to show the direction of the transaction, a description and the time of the transaction and an amount:
+To show the transaction history, we will create a new widget called `TransactionsList` that vertically lists `TransactionsListItems` for every transaction that was done with the wallet. Place both in a new folder `lib/widgets/transactions`. The `TransactionsListItem` will just be a List tile with a leading icon to show the direction of the transaction, a description and the time of the transaction and an amount:
 
 ```dart
-class TransactionListItem extends StatelessWidget {
-  const TransactionListItem({Key? key}) : super(key: key);
+class TransactionsListItem extends StatelessWidget {
+  const TransactionsListItem({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -358,7 +354,7 @@ class TransactionListItem extends StatelessWidget {
 }
 ```
 
-The `TransactionsList` will be a `ListView` with scrolling disabled and `shrinkWrap` on true, since it should be placed in the Column of an already scrollable parent with infite height, the `SingleChildScrollView` of the `HomeScreen`. The `TransactionsList` widget will now look like this:
+The `TransactionsList` will be a `ListView` with scrolling disabled and `shrinkWrap` on true, since it will be placed in an already scrollable parent with infite height, the `ListView` of the `HomeScreen`. The `TransactionsList` widget will now look like this:
 
 ```dart
 class TransactionsList extends StatelessWidget {
@@ -380,11 +376,11 @@ class TransactionsList extends StatelessWidget {
         ),
         ListView.builder(
           shrinkWrap:
-              true, // To set constraints on the ListView in an infinite height parent (SingleChildScrollView)
+              true, // To set constraints on the ListView in an infinite height parent (ListView in HomeScreen)
           physics:
-              const NeverScrollableScrollPhysics(), // Scrolling is handled by the parent (SingleChildScrollView)
+              const NeverScrollableScrollPhysics(), // Scrolling is handled by the parent (ListView in HomeScreen)
           itemBuilder: (ctx, index) {
-            return const TransactionListItem();
+            return const TransactionsListItem();
           },
           itemCount: 10,
         ),
@@ -966,18 +962,17 @@ class HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(),
       endDrawer: const Drawer(),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            SizedBox(
-              height: kSpacingUnit * 24,
-              child: WalletCardsList(
-                _state.walletBalance == null ? [] : [_state.walletBalance!], // Use the state here
-                onAddNewWallet: _controller.addNewWallet, // Added callback from the controller
-                onDeleteWallet: _controller.deleteWallet, // Added callback from the controller
-              ),
+      body: ListView(
+        children: [
+          SizedBox(
+            height: kSpacingUnit * 24,
+            child: WalletCardsList(
+              _state.walletBalance == null ? [] : [_state.walletBalance!], // Use the state here
+              onAddNewWallet: _controller.addNewWallet, // Added callback from the controller
+              onDeleteWallet: _controller.deleteWallet, // Added callback from the controller
             ),
-            // ... rest of the HomeScreen widget
+          ),
+          // ... rest of the HomeScreen widget
 ```
 
 And the `WalletCardsList`, `WalletBalanceCard` and `AddNewWalletCard` widgets will be updated as follow:
@@ -1983,7 +1978,7 @@ Future<void> refresh() async {
 }
 ```
 
-Flutter already has a `RefreshIndicator` widget that allows to call a refresh method when the user pulls down the screen. We will use this to call the `refresh` method of the `HomeController` when the user pulls down the `HomeScreen`. To do this, we will wrap the `SingleChildScrollView` in the `HomeScreen` with the `RefreshIndicator` widget and call the `refresh` method of the `HomeController` in the `onRefresh` callback:
+Flutter already has a `RefreshIndicator` widget that allows to call a refresh method when the user pulls down the screen. We will use this to call the `refresh` method of the `HomeController` when the user pulls down the `HomeScreen`. To do this, we will wrap the `body` of the `HomeScreen` with the `RefreshIndicator` widget and call the `refresh` method of the `HomeController` in the `onRefresh` callback:
 
 ```dart
 // ... In `HomeScreen` widget
@@ -1991,7 +1986,7 @@ body: RefreshIndicator(
   onRefresh: () async {
     await _controller.refresh();
   },
-  child: SingleChildScrollView(
+  child: ListView(
     // ... rest of widget
   ),
 ),
@@ -2111,11 +2106,11 @@ class TransactionsListItemViewModel extends Equatable {
 }
 ```
 
-We can now change the hardcoded data in the widget to use data of a view model instead. Add a field and parameter to `TransactionListItem` widget and use it to show the data in the UI:
+We can now change the hardcoded data in the widget to use data of a view model instead. Add a field and parameter to `TransactionsListItem` widget and use it to show the data in the UI:
 
 ```dart
-class TransactionListItem extends StatelessWidget {
-  const TransactionListItem({super.key, required this.transaction}); // Add the transaction parameter
+class TransactionsListItem extends StatelessWidget {
+  const TransactionsListItem({super.key, required this.transaction}); // Add the transaction parameter
 
   final TransactionsListItemViewModel transaction; // Add this
 
@@ -2144,7 +2139,7 @@ class TransactionListItem extends StatelessWidget {
 }
 ```
 
-Now the `TransactionList` widget should also be updated to have a list of `TransactionsListItemViewModel` instances as a parameter and use them to build the list of the transactions dynamically. The `itemCount` of the list should be the length of the list of view models and the `itemBuilder` should take the view model at the current index to build the `TransactionListItem` widget:
+Now the `TransactionList` widget should also be updated to have a list of `TransactionsListItemViewModel` instances as a parameter and use them to build the list of the transactions dynamically. The `itemCount` of the list should be the length of the list of view models and the `itemBuilder` should take the view model at the current index to build the `TransactionsListItem` widget:
 
 ```dart
 class TransactionsList extends StatelessWidget {
@@ -2172,7 +2167,7 @@ class TransactionsList extends StatelessWidget {
           physics:
               const NeverScrollableScrollPhysics(),
           itemBuilder: (ctx, index) {
-            return TransactionListItem(
+            return TransactionsListItem(
               transaction: transactions[index], // Get the view model at the current index
             );
           },
