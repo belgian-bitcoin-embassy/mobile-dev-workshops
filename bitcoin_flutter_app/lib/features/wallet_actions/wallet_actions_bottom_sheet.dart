@@ -46,7 +46,9 @@ class WalletActionsBottomSheet extends StatelessWidget {
               ReceiveTab(
                 bitcoinWalletService: _bitcoinWalletService,
               ),
-              const SendTab(),
+              SendTab(
+                bitcoinWalletService: _bitcoinWalletService,
+              ),
             ],
           ),
         ),

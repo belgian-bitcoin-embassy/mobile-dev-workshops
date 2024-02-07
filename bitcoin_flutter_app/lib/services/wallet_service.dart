@@ -8,6 +8,12 @@ abstract class WalletService {
   Future<int> getSpendableBalanceSat();
   Future<String> generateInvoice();
   Future<List<TransactionEntity>> getTransactions();
+  Future<void> pay(
+    String invoice, {
+    int? amountSat,
+    double? satPerVbyte,
+    int? absoluteFeeSat,
+  });
 }
 
 class BitcoinWalletService implements WalletService {
@@ -83,6 +89,38 @@ class BitcoinWalletService implements WalletService {
         timestamp: tx.confirmationTime?.timestamp,
       );
     }).toList();
+  }
+
+  @override
+  Future<void> pay(
+    String invoice, {
+    int? amountSat,
+    double? satPerVbyte,
+    int? absoluteFeeSat,
+  }) async {
+    if (amountSat == null) {
+      throw Exception('Amount is required for a bitcoin on-chain transaction!');
+    }
+
+    // Convert the invoice to an address
+    final address = await Address.create(address: invoice);
+    final script = await address
+        .scriptPubKey(); // Creates the output scripts so that the wallet that generated the address can spend the funds
+    var txBuilder = TxBuilder().addRecipient(script, amountSat);
+
+    // Set the fee rate for the transaction
+    if (satPerVbyte != null) {
+      txBuilder = txBuilder.feeRate(satPerVbyte);
+    } else if (absoluteFeeSat != null) {
+      txBuilder = txBuilder.feeAbsolute(absoluteFeeSat);
+    }
+
+    final txBuilderResult = await txBuilder.finish(_wallet!);
+    final sbt = await _wallet!.sign(psbt: txBuilderResult.psbt);
+    final tx = await sbt.extractTx();
+    await _blockchain.broadcast(tx);
+
+    print('Transaction with id ${tx.txid} broadcasted!');
   }
 
   bool get hasWallet => _wallet != null;

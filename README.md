@@ -2301,9 +2301,391 @@ For now we will continue with our final part of this first workshop and finish o
 
 ### 6. Sending funds
 
-### 7. Backup wallet
+Now that we are able to receive funds and show our transactions, we will add the ability to send funds to another address ourselves.
+Let's start by working from the `BitcoinWalletService` back to the UI again. We will add a new method to the `WalletService` interface to send funds. To keep our `WalletService` interface generic for other transactions later, let's name the new function `pay` and let it take an `invoice` parameter of type `String`. This invoice can later be parsed as a normal Bitcoin address or BIP21 URI, as a Lightning Invoice, as an LNURL etc. For now we will only implement paying to a regular Bitcoin address.
 
-### 8. Recover wallet
+```dart
+abstract class WalletService {
+  Future<void> addWallet();
+  Future<void> deleteWallet();
+  Future<int> getSpendableBalanceSat();
+  Future<String> generateInvoice();
+  Future<List<TransactionEntity>> getTransactions();
+  Future<void> pay(
+    String invoice, {
+    int? amountSat,
+    double? satPerVbyte,
+    int? absoluteFeeSat,
+  }); // Add this pay method
+}
+```
+
+The BDK library offers a `TxBuilder` that is quite powerful because of the flexibility to build all sort of different Bitcoin transactions. We will use this to build the transaction, then we will use our wallet to sign it and broadcast it to the blockchain. Now let's use all of that to add a concrete implementation of the `pay` method to the `BitcoinWalletService` class:
+
+```dart
+@override
+Future<void> pay(
+  String invoice, {
+  int? amountSat,
+  double? satPerVbyte,
+  int? absoluteFeeSat,
+}) async {
+  if (amountSat == null) {
+    throw Exception('Amount is required for a bitcoin on-chain transaction!');
+  }
+
+  // Convert the invoice to an address
+  final address = await Address.create(address: invoice);
+  final script = await address
+      .scriptPubKey(); // Creates the output scripts so that the wallet that generated the address can spend the funds
+  var txBuilder = TxBuilder().addRecipient(script, amountSat);
+
+  // Set the fee rate for the transaction
+  if (satPerVbyte != null) {
+    txBuilder = txBuilder.feeRate(satPerVbyte);
+  } else if (absoluteFeeSat != null) {
+    txBuilder = txBuilder.feeAbsolute(absoluteFeeSat);
+  }
+
+  final txBuilderResult = await txBuilder.finish(_wallet!);
+  final sbt = await _wallet!.sign(psbt: txBuilderResult.psbt);
+  final tx = await sbt.extractTx();
+  await _blockchain.broadcast(tx);
+
+  print('Transaction with id ${tx.txid} broadcasted!');
+}
+```
+
+As you can see, we added some parameters to the `pay` method to be able to set the fee rate for the transaction. The `amountSat` parameter is required, since we need to know the amount to send. The `satPerVbyte` parameter is optional and can be used to set the fee rate in satoshis per vbyte. The `absoluteFeeSat` parameter is also optional and can be used to set the absolute fee in satoshis.
+
+At the end we printed the transaction id of the broadcasted transaction to the console. In a production app, you would want to handle the result of the broadcast and show a confirmation message to the user, but for now we will just print it to the console.
+
+Now to get the data from the send tab UI to the `BitcoinWalletService`, we will also add a state and controller for the send feature, similar to what we did for the receive feature.
+In the `lib/features/wallet_actions/send` folder, add two new files: `send_state.dart` and `send_controller.dart`.
+
+In the `send_state.dart` file, add the `SendState` class with fields for the inputs like the amount, the address and the fee rate, as well as some fields to show in the UI like possible errors and loading:
+
+```dart
+import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
+
+@immutable
+class SendState extends Equatable {
+  const SendState({
+    this.amountSat,
+    this.invoice,
+    this.satPerVbyte,
+    this.isMakingPayment = false,
+    this.error,
+  });
+
+  final int? amountSat;
+  final String? invoice;
+  final double? satPerVbyte;
+  final bool isMakingPayment;
+  final Exception? error;
+
+  double? get amountBtc {
+    if (amountSat == null) {
+      return null;
+    }
+
+    return amountSat! / 100000000;
+  }
+
+  SendState copyWith({
+    int? amountSat,
+    String? invoice,
+    double? satPerVbyte,
+    bool? isMakingPayment,
+    Exception? error,
+    bool? clearError,
+  }) {
+    return SendState(
+      amountSat: amountSat ?? this.amountSat,
+      invoice: invoice ?? this.invoice,
+      satPerVbyte: satPerVbyte ?? this.satPerVbyte,
+      isMakingPayment: isMakingPayment ?? this.isMakingPayment,
+      error: clearError == true ? null : error ?? this.error,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        amountSat,
+        invoice,
+        satPerVbyte,
+        isMakingPayment,
+        error,
+      ];
+}
+```
+
+In the `send_controller.dart` file, add the `SendController` class. This controller, like our `HomeController` and `ReceiveController`, also needs access to the state, the `SendState` in this case, and the `BitcoinWalletService` to be able to send the payment. So also add the `getState`, `updateState` and the `WalletService` fields and set them in the constructor.
+Add the methods to handle the input changes, for now we will skip the fee slider and only implement the amount and address input fields. Also add a method to handle the send button press:
+
+```dart
+import 'package:bitcoin_flutter_app/features/wallet_actions/send/send_state.dart';
+import 'package:bitcoin_flutter_app/services/wallet_service.dart';
+
+class SendController {
+  final SendState Function() _getState;
+  final Function(SendState state) _updateState;
+  final WalletService _bitcoinWalletService;
+
+  SendController({
+    required getState,
+    required updateState,
+    required bitcoinWalletService,
+  })  : _getState = getState,
+        _updateState = updateState,
+        _bitcoinWalletService = bitcoinWalletService;
+
+  void amountChangeHandler(String? amount) async {
+    final state = _getState();
+    try {
+      if (amount == null || amount.isEmpty) {
+        _updateState(state.copyWith(amountSat: 0, clearError: true));
+      } else {
+        final amountBtc = double.parse(amount);
+        final int amountSat = (amountBtc * 100000000).round();
+
+        if (amountSat > await _bitcoinWalletService.getSpendableBalanceSat()) {
+          _updateState(state.copyWith(
+            error: NotEnoughFundsException(),
+          ));
+        } else {
+          _updateState(state.copyWith(amountSat: amountSat, clearError: true));
+        }
+      }
+    } catch (e) {
+      print(e);
+      _updateState(state.copyWith(
+        error: InvalidAmountException(),
+      ));
+    }
+  }
+
+  void invoiceChangeHandler(String? invoice) async {
+    if (invoice == null || invoice.isEmpty) {
+      _updateState(_getState().copyWith(invoice: ''));
+    } else {
+      _updateState(_getState().copyWith(invoice: invoice));
+    }
+  }
+
+  Future<void> makePayment() async {
+    final state = _getState();
+    try {
+      _updateState(state.copyWith(isMakingPayment: true));
+
+      await _bitcoinWalletService.pay(
+        state.invoice!,
+        amountSat: state.amountSat,
+        satPerVbyte: state.satPerVbyte,
+      );
+
+      // Reset state after successful payment
+      _updateState(const SendState());
+    } catch (e) {
+      print(e);
+      _updateState(state.copyWith(
+        isMakingPayment: false,
+        error: PaymentException(),
+      ));
+    }
+  }
+}
+
+class InvalidAmountException implements Exception {}
+
+class NotEnoughFundsException implements Exception {}
+
+class PaymentException implements Exception {}
+```
+
+Now we can use this in our `SendTab` UI. However, like with the previous screens, we have to change the `SendTab` to a `StatefulWidget` to be able to use the state and controller:
+
+```dart
+// ... in `send_tab.dart` change the `SendTab` class to a `StatefulWidget`
+class SendTab extends StatefulWidget {
+  const SendTab({super.key});
+
+  @override
+  SendTabState createState() => SendTabState();
+}
+
+class SendTabState extends State<SendTab> {
+  // ... rest of class
+```
+
+Now we can add the state, the controller, initializing it in the `initState` method and the `WalletService` to the `SendTabState` class:
+
+```dart
+class SendTab extends StatefulWidget {
+  const SendTab({required this.bitcoinWalletService, super.key}); // Add the bitcoinWalletService parameter
+
+  final WalletService bitcoinWalletService; // Add this
+
+  @override
+  SendTabState createState() => SendTabState();
+}
+
+class SendTabState extends State<SendTab> {
+  SendState _state = const SendState(); // Add the state
+  late SendController _controller; // Add the controller
+
+  // Add the initState method to initialize the controller
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = SendController(
+      getState: () => _state,
+      updateState: (SendState state) => setState(() => _state = state),
+      bitcoinWalletService: widget.bitcoinWalletService,
+    );
+  }
+  // ... rest of class
+```
+
+Now we can use the state and controller in the UI of the `SendTab`. For the `onChanged` property of the amount and invoice `TextField`s we can set the `amountChangeHandler` and `invoiceChangeHandler` methods of the controller like this respectively: `onChanged: _controller.amountChangeHandler,` and `onChanged: _controller.invoiceChangeHandler,`.
+For the `onPressed` property of the send button we can call the `makePayment` method of the controller. Taking into account that the button should only be active when an amount and invoice are entered, the amount is not higher than the spendable balance and there is no error, we can set the `onPressed` property of the button like this:
+
+```dart
+onPressed: _state.amountSat == null ||
+        _state.amountSat == 0 ||
+        _state.invoice == null ||
+        _state.invoice!.isEmpty ||
+        _state.error is InvalidAmountException ||
+        _state.error is NotEnoughFundsException ||
+        _state.isMakingPayment
+    ? null
+    : _controller.makePayment,
+```
+
+We also disabled the button while the payment is in process by checking the `isMakingPayment` field of the state. To make it even more clear, let's change the icon of the button to also show a loading indicator when the payment is in process:
+
+```dart
+icon: _state.isMakingPayment
+    ? const CircularProgressIndicator()
+    : const Icon(Icons.send),
+```
+
+With the error field in the state, we can now also show the correct error message dynamically instead of always the same. Changes the condition in the `Text` widget to show the error message to this:
+
+```dart
+_state.error is InvalidAmountException
+  ? 'Please enter a valid amount.'
+  : _state.error is NotEnoughFundsException
+      ? 'Not enough funds available.'
+      : _state.error is PaymentException
+          ? 'Failed to make payment. Please try again.'
+          : '',
+```
+
+That should be it for the `SendTab` UI for now. Only thing left is making sure it gets the `WalletService` passed to it. Therefore just add it in the `wallet_actions_bottom_sheet.dart` file where the `SendTab` is used. Now both the `ReceiveTab` and the `SendTab` should have the `WalletService` passed to them:
+
+```dart
+child: TabBarView(
+  children: [
+    ReceiveTab(
+      bitcoinWalletService: _bitcoinWalletService,
+    ),
+    SendTab(
+      bitcoinWalletService: _bitcoinWalletService, // Add this
+    ),
+  ],
+),
+```
+
+With no errors left, we can now make a payment. To do this, we need an address to send to. We can generate one on our simulated Bitcoin Core node in Polar. Bitcoin Core per default has wallet functionality. Polar doesn't expose all of this in the user interface, but it permits us to open a terminal by right clicking on the node and selecting `Launch Terminal`:
+
+![Screenshot 2024-02-07 at 10 20 43](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/cb95e2fd-f680-424b-9deb-042ce3605916)
+
+In the terminal we can use the `bitcoin-cli` command line interface to generate a new address. We can do this by running the following command:
+
+```bash
+bitcoin-cli getnewaddress
+```
+
+This should return us a new address like this:
+
+![Screenshot 2024-02-07 at 18 35 30](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/0a504212-6dd7-448e-b737-7c3a1642bebb)
+
+Now copy the address and go back to our app. In the app, tap on the floating action button, select the `Send` tab, enter an amount and paste the generated address. Now click on the button to send the payment. If you have some coins in your wallet, the payment should be broadcasted to the blockchain and you should see the transaction id printed to the console. When you refresh the app, you should see a pending transaction at the top of the list of transactions. If you mine some blocks in Polar, the transaction should be confirmed and the balance should be updated.
+
+You may also notice that the amount is slightly more than the amount you entered. This is because of the fee that is added to the transaction. Since we didn't explicitly set the fee rate, the BDK library will calculate a minimum fee rate for us. In a production app, you would want to give the user the option to set the fee rate themselves, as different situations require different fee rates.
+
+Even more, you could give the user the option to bump the fee of a pending transaction, to cancel a pending transaction or to replace a pending transaction with a new one. This is all possible with the BDK library and although we will not implement it in this workshop, let's explore the API of the TxBuilder a bit more to see how you could do this and some other interesting things if you'd like.
+
+#### Bitcoin Development Kit's TxBuilder API
+
+##### Fee bumping
+
+It can happen that you put a fee that is too low and your transaction is not getting confirmed. This can happen for a lot of reasons and be accidentally or you could have put the fee low on purpose to save on fees and because you were not in a hurry to have it confirmed. In any case, you can bump the fee of a pending transaction at the moment you do need it confirmed sooner by creating a new transaction that spends the same utxo's but with a higher fee.
+
+The original transaction does have to be flagged as replaceable by fee to be able to do this. Otherwise the mempool will not accept the new transaction. So if you want to make a transaction replaceable by fee, you should set the RBF (Replace-By-Fee) flag in the transaction:
+
+```dart
+TxBuilder().enableRbf();
+```
+
+If you then later need to replace this transaction, you can do this by using the `BumpFeeTxBuilder` class instead of the `TxBuilder` to build a transaction that will spend the same utxo's as the one build with `TxBuilder` originally. This method takes a `Txid` as a parameter, which is the transaction id of the transaction you want to bump the fee of. It also takes a `FeeRate` as a parameter, which is the new fee rate you want to use for the new transaction and should off course be higher than the fee rate of the original transaction:
+
+```dart
+BumpFeeTxBuilder(txid: <txId>, feeRate: <feeRate>);
+```
+
+The use of the `BumpFeeTxBuilder` is very similar to the `TxBuilder` and the `finish` method of the `BumpFeeTxBuilder` returns a `TxBuilderResult` that can be used to sign and broadcast the new transaction with the `Wallet` and `Blockchain` instance respectively.
+
+There is one thing to keep in mind when bumping the fee of a transaction and that is that the new transaction will have a different transaction id than the original transaction. This means that the new transaction will be a different transaction than the original and the original will not be confirmed. This is because the transaction id is a hash of the transaction data and the transaction data includes the fee. So if the fee changes, the transaction id changes.
+
+##### Coin selection or coin control
+
+Coin selection is the process of selecting which utxo's to spend in a transaction. How you select the utxo's can be based on different strategies and can be done manually or automatically.
+
+For privacy reasons it is considered a good practice to consciously select the utxo's to spend in a transaction. This is because the utxo's you spend in a transaction can be linked to each other and to you. If you spend utxo's that are not linked to each other and to you, it is harder for an observer to link them to you. You could for example not use a certain utxo in a transaction because it is linked to a certain other utxo that you don't want the receiver to know is yours. Or you may not want to use a big utxo in a small transaction because you don't want the receiver to know you have such a big utxo.
+
+There are many things to take into consideration. If your users are not privacy conscious, you could use the [default coin selection strategy of the BDK library](https://docs.rs/bdk/latest/bdk/wallet/coin_selection/struct.BranchAndBoundCoinSelection.html), which is the Branch and Bound algorithm. This algorithm selects the utxo's that minimize the amount of change and the number of utxo's used by looking for a combination of utxo's that gives the exact amount needed in the transaction. This is a good strategy for most users, but is focused more on reducing fees and “dust” (or, worthless coins), not on optimizing privacy.
+
+For users that do care about privacy, BDK does offer us the flexibility to implement our own coin selection strategy or implement a way to let the user select the utxo's manually. This is a bit more advanced and we will not implement it in this workshop, but it is good to know that it is possible. There are different methods available for this in the `TxBuilder` and `Wallet` classes of the BDK library:
+
+```dart
+TxBuilder().addUtxo(outpoint); // Add a specific utxo to spend in the transaction
+TxBuilder().addUtxos(outpoints); // Add a list of specific utxo's to spend in the transaction
+TxBuilder().doNotSpendChange(); // Makes sure no change utxo's are spent in the transaction
+TxBuilder().addUnSpendable(unSpendable); // Add a specific utxo to not spend in the transaction
+TxBuilder().manuallySelectedOnly(); // Makes sure only manually selected utxo's are spent in the transaction
+TxBuilder().onlySpendChange(); // Makes sure only change utxo's are spent in the transaction
+_wallet.listUnspent(); // List all utxo's of the wallet (_wallet is a Wallet instance)
+```
+
+Manual coin selection generally goes hand in hand with coin labeling. Coin labeling is the process of labeling utxo's with metadata to be able to select them manually. This metadata can be anything you want, for example a label to know the provenance of a utxo, like for example "payment dinner from Alice", "withdraw from exchange X" etc. This can help people to remember which utxo's are linked to each other and to them and to select them manually in a transaction. Some Bitcoiners use this to maintain a KYC-free utxo set, which is a set of utxo's that are not linked to their identity. Labeling utxo's is something not supported by the BDK library, but it is possible to implement it yourself by using the `Wallet` instance to list the utxo's and store the metadata in a database or file.
+
+To get an idea of how the UX coin selection could be implemented, you can get inspired by the [Bitcoin Design Guide's chapter on Coin Selection](https://bitcoin.design/guide/how-it-works/coin-selection).
+
+##### Drain wallet
+
+Another interesting thing to mention is the `drain` method of the `Wallet` class. This method is used to spend all utxo's of the wallet (minus the ones added to the unspendable list) in a single transaction. This can be useful for example when you want to move all funds to a new wallet or to a new address. It can also be useful to consolidate utxo's to reduce the number of utxo's and to reduce the amount of change utxo's. This can be useful to reduce fees and to reduce the amount of dust in the wallet.
+
+```dart
+TxBuilder().draiWallet();
+```
+
+The method `drainTo` is a variant that will send the change utxo's of the transaction, in case you add utxo's that make the total amount exceed the amount to send to the recipient address, to a specific address instead of back to the wallet:
+
+```dart
+TxBuilder().drainTo(<script>);
+```
+
+### 7. Bonus: Backup wallet
+
+If time permits during the workshop we will add a way to show the mnemonic recovery phrase of the wallet from the menu.
+
+### 8. Bonus: Recover wallet
+
+If time permits during the workshop we will add a way to recover a wallet from a mnemonic recovery phrase instead of only being able to create a new wallet.
 
 ## Workshop 2: Lightning Network wallet
 
@@ -2327,3 +2709,23 @@ The [Lightning Development Kit (LDK)](https://lightningdevkit.org) will be used 
 ## Workshop 3: Other Lightning libraries and Lightning Service Provider integration
 
 In this workshop, some other ways to embed a Lightning wallet, like [Breez SDK](https://sdk-doc.breez.technology/), will be shown and we will improve the UX (User eXperience) of the app by integrating with [Lightning Service Providers (LSP's)](https://github.com/BitcoinAndLightningLayerSpecs/lsp).
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+
+```
