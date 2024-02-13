@@ -2079,12 +2079,12 @@ import 'package:equatable/equatable.dart';
 class TransactionsListItemViewModel extends Equatable {
   final String id;
   final int amountSat;
-  final int timestamp;
+  final int? timestamp;
 
   const TransactionsListItemViewModel({
     required this.id,
     required this.amountSat,
-    required this.timestamp,
+    this.timestamp,
   });
 
   TransactionsListItemViewModel.fromTransactionEntity(TransactionEntity entity)
@@ -2096,8 +2096,12 @@ class TransactionsListItemViewModel extends Equatable {
   bool get isOutgoing => amountSat < 0;
   double get amountBtc => amountSat / 100000000;
 
-  String get formattedTimestamp {
-    final date = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+  String? get formattedTimestamp {
+    if (timestamp == null) {
+      return null;
+    }
+
+    final date = DateTime.fromMillisecondsSinceEpoch(timestamp! * 1000);
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}';
   }
 
@@ -2128,7 +2132,7 @@ class TransactionsListItem extends StatelessWidget {
         style: theme.textTheme.titleMedium,
       ),
       subtitle: Text(
-        transaction.formattedTimestamp, // Use the view model data
+        transaction.formattedTimestamp ?? 'Pending', // Use the view model data or 'Pending' in case of no timestamp
         style: theme.textTheme.bodySmall,
       ),
       trailing: Text(
@@ -2223,7 +2227,18 @@ Future<List<TransactionsListItemViewModel>> _getTransactions() async {
           TransactionsListItemViewModel.fromTransactionEntity(entity))
       .toList();
   // Sort transactions by timestamp in descending order
-  transactions.sort((t1, t2) => t2.timestamp.compareTo(t1.timestamp));
+  transactions.sort((t1, t2) {
+    if (t1.timestamp == null && t2.timestamp == null) {
+      return 0;
+    }
+    if (t1.timestamp == null) {
+      return -1;
+    }
+    if (t2.timestamp == null) {
+      return 1;
+    }
+    return t2.timestamp!.compareTo(t1.timestamp!);
+  });
   return transactions;
 }
 ```

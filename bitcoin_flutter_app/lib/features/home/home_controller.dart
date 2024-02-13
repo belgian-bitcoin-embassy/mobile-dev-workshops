@@ -97,7 +97,18 @@ class HomeController {
             TransactionsListItemViewModel.fromTransactionEntity(entity))
         .toList();
     // Sort transactions by timestamp in descending order
-    transactions.sort((t1, t2) => t2.timestamp.compareTo(t1.timestamp));
+    transactions.sort((t1, t2) {
+      if (t1.timestamp == null && t2.timestamp == null) {
+        return 0;
+      }
+      if (t1.timestamp == null) {
+        return -1;
+      }
+      if (t2.timestamp == null) {
+        return 1;
+      }
+      return t2.timestamp!.compareTo(t1.timestamp!);
+    });
     return transactions;
   }
 }

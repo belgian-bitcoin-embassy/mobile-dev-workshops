@@ -20,7 +20,7 @@ class TransactionsListItem extends StatelessWidget {
         style: theme.textTheme.titleMedium,
       ),
       subtitle: Text(
-        transaction.formattedTimestamp,
+        transaction.formattedTimestamp ?? 'Pending',
         style: theme.textTheme.bodySmall,
       ),
       trailing: Text(
