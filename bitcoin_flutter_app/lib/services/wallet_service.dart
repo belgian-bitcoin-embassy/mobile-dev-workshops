@@ -1,4 +1,5 @@
 import 'package:bdk_flutter/bdk_flutter.dart';
+import 'package:bitcoin_flutter_app/entities/recommended_fee_rates_entity.dart';
 import 'package:bitcoin_flutter_app/entities/transaction_entity.dart';
 import 'package:bitcoin_flutter_app/repositories/mnemonic_repository.dart';
 
@@ -8,6 +9,12 @@ abstract class WalletService {
   Future<int> getSpendableBalanceSat();
   Future<String> generateInvoice();
   Future<List<TransactionEntity>> getTransactions();
+  Future<String> pay(
+    String invoice, {
+    int? amountSat,
+    double? satPerVbyte,
+    int? absoluteFeeSat,
+  });
 }
 
 class BitcoinWalletService implements WalletService {
@@ -85,6 +92,57 @@ class BitcoinWalletService implements WalletService {
     }).toList();
   }
 
+  @override
+  Future<String> pay(
+    String invoice, {
+    int? amountSat,
+    double? satPerVbyte,
+    int? absoluteFeeSat,
+  }) async {
+    if (amountSat == null) {
+      throw Exception('Amount is required for a bitcoin on-chain transaction!');
+    }
+
+    // Convert the invoice to an address
+    final address = await Address.create(address: invoice);
+    final script = await address
+        .scriptPubKey(); // Creates the output scripts so that the wallet that generated the address can spend the funds
+    var txBuilder = TxBuilder().addRecipient(script, amountSat);
+
+    // Set the fee rate for the transaction
+    if (satPerVbyte != null) {
+      txBuilder = txBuilder.feeRate(satPerVbyte);
+    } else if (absoluteFeeSat != null) {
+      txBuilder = txBuilder.feeAbsolute(absoluteFeeSat);
+    }
+
+    final txBuilderResult = await txBuilder.finish(_wallet!);
+    final sbt = await _wallet!.sign(psbt: txBuilderResult.psbt);
+    final tx = await sbt.extractTx();
+    await _blockchain.broadcast(tx);
+
+    return tx.txid();
+  }
+
+  Future<RecommendedFeeRatesEntity> calculateFeeRates() async {
+    final [highPriority, mediumPriority, lowPriority, noPriority] =
+        await Future.wait(
+      [
+        _blockchain.estimateFee(5),
+        _blockchain.estimateFee(144),
+        _blockchain.estimateFee(504),
+        _blockchain.estimateFee(1008),
+      ],
+    );
+
+    return RecommendedFeeRatesEntity(
+      highPriority: highPriority.asSatPerVb(),
+      mediumPriority: mediumPriority.asSatPerVb(),
+      lowPriority: lowPriority.asSatPerVb(),
+      noPriority: noPriority.asSatPerVb(),
+    );
+  }
+
   bool get hasWallet => _wallet != null;
 
   Future<void> sync() async {
@@ -93,9 +151,11 @@ class BitcoinWalletService implements WalletService {
 
   Future<void> _initBlockchain() async {
     _blockchain = await Blockchain.create(
-      config: const BlockchainConfig.esplora(
-        config: EsploraConfig(
-          baseUrl: "http://10.0.2.2:3002",
+      config: const BlockchainConfig.electrum(
+        config: ElectrumConfig(
+          retry: 5,
+          url: "ssl://electrum.blockstream.info:50002",
+          validateDomain: false,
           stopGap: 10,
         ),
       ),
@@ -107,7 +167,7 @@ class BitcoinWalletService implements WalletService {
     _wallet = await Wallet.create(
       descriptor: descriptors.$1,
       changeDescriptor: descriptors.$2,
-      network: Network.Regtest,
+      network: Network.Bitcoin,
       databaseConfig: const DatabaseConfig
           .memory(), // Txs and UTXOs related to the wallet will be stored in memory
     );
@@ -116,7 +176,7 @@ class BitcoinWalletService implements WalletService {
   Future<(Descriptor receive, Descriptor change)> _getBip84TemplateDescriptors(
     Mnemonic mnemonic,
   ) async {
-    const network = Network.Regtest;
+    const network = Network.Bitcoin;
     final secretKey =
         await DescriptorSecretKey.create(network: network, mnemonic: mnemonic);
     final receivingDescriptor = await Descriptor.newBip84(
