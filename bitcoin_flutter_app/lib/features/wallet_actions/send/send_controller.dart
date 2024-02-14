@@ -47,19 +47,52 @@ class SendController {
     }
   }
 
+  Future<void> fetchRecommendedFeeRates() async {
+    final state = _getState();
+    try {
+      final fetchedRates = await (_bitcoinWalletService as BitcoinWalletService)
+          .calculateFeeRates();
+
+      final recommendedFeeRates = {
+        fetchedRates.highPriority,
+        fetchedRates.mediumPriority,
+        fetchedRates.lowPriority,
+        fetchedRates.noPriority
+      }.toList();
+
+      _updateState(
+        state.copyWith(
+          recommendedFeeRates: recommendedFeeRates,
+          satPerVbyte: fetchedRates.mediumPriority,
+        ),
+      );
+    } catch (e) {
+      print(e);
+      _updateState(state.copyWith(
+        error: FeeRecommendationNotAvailableException(),
+      ));
+    }
+  }
+
+  void feeRateChangeHandler(double feeRate) {
+    _updateState(_getState().copyWith(satPerVbyte: feeRate));
+  }
+
   Future<void> makePayment() async {
     final state = _getState();
     try {
       _updateState(state.copyWith(isMakingPayment: true));
 
-      await _bitcoinWalletService.pay(
+      final txId = await _bitcoinWalletService.pay(
         state.invoice!,
         amountSat: state.amountSat,
         satPerVbyte: state.satPerVbyte,
       );
 
-      // Reset state after successful payment
-      _updateState(const SendState());
+      _updateState(state.copyWith(
+        isMakingPayment: false,
+        txId: txId,
+      ));
     } catch (e) {
       print(e);
       _updateState(state.copyWith(
@@ -75,3 +108,5 @@ class InvalidAmountException implements Exception {}
 class NotEnoughFundsException implements Exception {}
 
 class PaymentException implements Exception {}
+
+class FeeRecommendationNotAvailableException implements Exception {}

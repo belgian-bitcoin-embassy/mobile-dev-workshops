@@ -2326,7 +2326,7 @@ abstract class WalletService {
   Future<int> getSpendableBalanceSat();
   Future<String> generateInvoice();
   Future<List<TransactionEntity>> getTransactions();
-  Future<void> pay(
+  Future<String> pay(
     String invoice, {
     int? amountSat,
     double? satPerVbyte,
@@ -2339,7 +2339,7 @@ The BDK library offers a `TxBuilder` that is quite powerful because of the flexi
 
 ```dart
 @override
-Future<void> pay(
+Future<String> pay(
   String invoice, {
   int? amountSat,
   double? satPerVbyte,
@@ -2367,13 +2367,13 @@ Future<void> pay(
   final tx = await sbt.extractTx();
   await _blockchain.broadcast(tx);
 
-  print('Transaction with id ${tx.txid} broadcasted!');
+  return tx.txid();
 }
 ```
 
 As you can see, we added some parameters to the `pay` method to be able to set the fee rate for the transaction. The `amountSat` parameter is required, since we need to know the amount to send. The `satPerVbyte` parameter is optional and can be used to set the fee rate in satoshis per vbyte. The `absoluteFeeSat` parameter is also optional and can be used to set the absolute fee in satoshis.
 
-At the end we printed the transaction id of the broadcasted transaction to the console. In a production app, you would want to handle the result of the broadcast and show a confirmation message to the user, but for now we will just print it to the console.
+At the end we return the transaction id of the broadcasted transaction to be able to show it in the UI or to handle it in any other way.
 
 Now to get the data from the send tab UI to the `BitcoinWalletService`, we will also add a state and controller for the send feature, similar to what we did for the receive feature.
 In the `lib/features/wallet_actions/send` folder, add two new files: `send_state.dart` and `send_controller.dart`.
@@ -2392,6 +2392,7 @@ class SendState extends Equatable {
     this.satPerVbyte,
     this.isMakingPayment = false,
     this.error,
+    this.txId,
   });
 
   final int? amountSat;
@@ -2399,6 +2400,7 @@ class SendState extends Equatable {
   final double? satPerVbyte;
   final bool isMakingPayment;
   final Exception? error;
+  final String? txId;
 
   double? get amountBtc {
     if (amountSat == null) {
@@ -2415,6 +2417,7 @@ class SendState extends Equatable {
     bool? isMakingPayment,
     Exception? error,
     bool? clearError,
+    String? txId,
   }) {
     return SendState(
       amountSat: amountSat ?? this.amountSat,
@@ -2422,7 +2425,16 @@ class SendState extends Equatable {
       satPerVbyte: satPerVbyte ?? this.satPerVbyte,
       isMakingPayment: isMakingPayment ?? this.isMakingPayment,
       error: clearError == true ? null : error ?? this.error,
+      txId: txId ?? this.txId,
     );
+  }
+
+  String? get partialTxId {
+    if (txId == null) {
+      return null;
+    }
+
+    return '${txId!.substring(0, 8)}...${txId!.substring(txId!.length - 8)}';
   }
 
   @override
@@ -2432,6 +2444,7 @@ class SendState extends Equatable {
         satPerVbyte,
         isMakingPayment,
         error,
+        txId,
       ];
 }
 ```
@@ -2494,14 +2507,16 @@ class SendController {
     try {
       _updateState(state.copyWith(isMakingPayment: true));
 
-      await _bitcoinWalletService.pay(
+      final txId = await _bitcoinWalletService.pay(
         state.invoice!,
         amountSat: state.amountSat,
         satPerVbyte: state.satPerVbyte,
       );
 
-      // Reset state after successful payment
-      _updateState(const SendState());
+      _updateState(state.copyWith(
+        isMakingPayment: false,
+        txId: txId,
+      ));
     } catch (e) {
       print(e);
       _updateState(state.copyWith(
@@ -2576,7 +2591,19 @@ onPressed: _state.amountSat == null ||
         _state.error is NotEnoughFundsException ||
         _state.isMakingPayment
     ? null
-    : _controller.makePayment,
+    : () => _controller.makePayment().then(
+          (_) {
+            if (_state.txId != null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                      'Payment successful. Tx ID: ${_state.partialTxId}'),
+                ),
+              );
+              Navigator.pop(context);
+            }
+          },
+        ),
 ```
 
 We also disabled the button while the payment is in process by checking the `isMakingPayment` field of the state. To make it even more clear, let's change the icon of the button to also show a loading indicator when the payment is in process:
@@ -2694,6 +2721,238 @@ The method `drainTo` is a variant that will send the change utxo's of the transa
 TxBuilder().drainTo(<script>);
 ```
 
+#### Setting the fee rate
+
+We already have the code in place to set the fee rate for a transaction in the `pay` method of the `BitcoinWalletService`. We can set the fee rate in satoshis per vbyte or we can set the absolute fee in satoshis. But how do we know what the fee rate to set should be? How does our user now what fee to set? This is a very important question and a very difficult one to answer. The fee rate is a very dynamic thing and depends on a lot of factors. It is not only the size of the transaction that determines the fee rate, but also the demand for block space. The demand for block space can change from minute to minute and so it is difficult to predict. This is why it is very difficult to set the fee rate and why it is a good practice to let the user set the fee rate themselves.
+
+Let's do a quick intermezzo about fee rates in Bitcoin to understand this better.
+
+##### Fee rate intermezzo
+
+In Bitcoin, when making a transaction you are competing with other transactions to be included in a block. Bitcoin has a limited block size and miners try to maximize the profit they can make with the limited space they have in a block.
+So generally you will have to pay a higher absolute fee for a bigger transaction (for example a tx with more inputs or outputs) then for a smaller transaction both wanting to be confirmed at a certain instance. So with the fee you are actually paying for the space you are taking up in a block. That's why fee rates are expressed in satoshis per vbyte. Like this you can compare the fee rates of different transactions, even if they have different sizes and different absolute fees.
+
+Before SegWit, the size of a transaction was the size of the transaction in bytes and a block could only contain one megabyte of transactions. This meant that the fee rate was calculated by dividing the fee in satoshis by the size of the transaction in real bytes.
+
+With SegWit, vbytes got introduced as the measuring unit instead. A vbyte is a virtual byte and one byte in a legacy transaction is equivalent to 4 weight units in a SegWit transaction. This is because the witness data of a SegWit transaction is discounted in the fee calculation, since it is not stored in the blockchain, but kept by the nodes that validate the transactions. Implicitly increasing the size that all transactions in a block can have to 4 megabytes, without increasing the block size limit itself, hereby avoiding a hard fork.
+
+Except for making SegWit transactions occupy less space in a block and thus be cheaper, it also solved a problem of transaction malleability and made it possible to implement the Lightning Network. Diving deeper into SegWit is out of scope for this workshop, but it is good to know that the fee rate is expressed in satoshis per vbyte and that the fee rate is calculated by dividing the fee in satoshis by the size of the transaction in vbytes.
+
+##### Fee estimation
+
+Although different factors can influence the fee rate one needs or wants to set, we can use data from the mempool to estimate the fee rate. The mempool is the place on every node where all unconfirmed transactions are stored and so how much they are offering to pay in fees. The node our application is connected to through the BDK library also has its own copy of the mempool and can give us access to this data. This data can be used to estimate the fee rate we should set for our transaction to be confirmed in a certain amount of blocks. BDK exposes this data through the `Blockchain` class and its `estimateFee` method.
+
+The `estimateFee` method takes a `Target` as a parameter, which is the amount of blocks you want to be confirmed in. Of course this is an estimation and not a guarantee, but it can give you an idea of what fee rate you should set.
+
+We want to use this method to give the user an idea of what fee rate to set based on if his transaction is urgent or not. So let's create an entity class to hold different fee rates based on the priority of the transaction compared to other transactions in the mempool. In the `lib/entities` folder, add a new file `recommended_fee_rates_entity.dart` and add the `RecommendedFeeRatesEntity` class:
+
+```dart
+import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
+
+@immutable
+class RecommendedFeeRatesEntity extends Equatable {
+  final double highPriority;
+  final double mediumPriority;
+  final double lowPriority;
+  final double noPriority;
+
+  const RecommendedFeeRatesEntity({
+    required this.highPriority,
+    required this.mediumPriority,
+    required this.lowPriority,
+    required this.noPriority,
+  });
+
+  @override
+  List<Object> get props => [
+        highPriority,
+        mediumPriority,
+        lowPriority,
+        noPriority,
+      ];
+}
+```
+
+Now we can use BDK's `estimateFee` method in our `BitcoinWalletService` to estimate the fee rates for different priorities and return them as a `RecommendedFeeRatesEntity`. Let's add a new method called `calculateFeeRates` to the `BitcoinWalletService`. We will not add this to the `WalletService` interface, because this way of returning the fee rates is specific to the Bitcoin blockchain and not to the Lightning Network for example.
+
+```dart
+Future<RecommendedFeeRatesEntity> calculateFeeRates() async {
+    final [highPriority, mediumPriority, lowPriority, noPriority] =
+        await Future.wait(
+      [
+        _blockchain.estimateFee(1),
+        _blockchain.estimateFee(2),
+        _blockchain.estimateFee(3),
+        _blockchain.estimateFee(4),
+      ],
+    );
+
+    return RecommendedFeeRatesEntity(
+      highPriority: highPriority.asSatPerVb(),
+      mediumPriority: mediumPriority.asSatPerVb(),
+      lowPriority: lowPriority.asSatPerVb(),
+      noPriority: noPriority.asSatPerVb(),
+    );
+  }
+```
+
+As the targets of blocks to get confirmed in we just took 1, 2, 3 and 4 blocks. This is just an example and you could use different targets based on your own criteria or based on the backend you are connected to. This latter is something important to mention, because the mempool of different nodes can have different data based on their mempool policies, and the way they calculate fees can also be different. So it is important to know which node you are connected to and to know how it calculates fees.
+
+Since our local Polar RegTest node does not have pending transactions in a mempool, we will not be able to test this feature very well. So let's change the network and Bitcoin backend back to the Bitcoin mainnet where fee dynamics are the most interesting. Change the `_initBlockchain` method in the `BitcoinWalletService` to use Blockstream's Esplora API for the Bitcoin mainnet:
+
+```dart
+Future<void> _initBlockchain() async {
+  _blockchain = await Blockchain.create(
+    config: const BlockchainConfig.electrum(
+      config: ElectrumConfig(
+        retry: 5,
+        url: "ssl://electrum.blockstream.info:50002", // The only difference with the testnet backend is the port number, 50002 instead of 60002
+        validateDomain: false,
+        stopGap: 10,
+      ),
+    ),
+  );
+}
+```
+
+Also change `Network.Regtest` to `Network.Bitcoin` in the other places where the network is used in the `BitcoinWalletService`.
+
+Since we use Blockstream's Esplora backend, let's check the documentation to know how its fee estimation API works: https://github.com/Blockstream/esplora/blob/master/API.md#fee-estimates.
+
+As you can see, it also returns the fee rates for different target blocks, but with a limited set of targets:
+
+```
+The available confirmation targets are 1-25, 144, 504 and 1008 blocks.
+```
+
+Also, if we navigate to `https://blockstream.info/api/fee-estimates` in our browser, we can see the fee rates for the different targets. Here are two observations you can check for yourself: Some block targets have the same fee rates and the proposed fee rates are different from the ones proposed by `mempool.space`. This is important to notice, because it shows that different backends can have different fee rates and that the fee rates can be different for different targets. Using the fee rates of Blockstream's Esplora as-is, your users might overpay for the priority they want. This is something to take into account when building a production app and it is important to know that the fee rates are not a guarantee and that they are just an estimation, so giving the user the option to set the fee rate themselves is a good practice.
+
+Too have the most chance on having different fee rates without complicating ourself too much with the calculations, lets change the block targets in the `calculateFeeRates` method to 5, 144, 504 and 1008 blocks, using the available targets in the API response. This way we can see the difference in fee rates for different targets and we can use this to show the user the difference in fee rates for different priorities.
+
+```dart
+_blockchain.estimateFee(5),
+_blockchain.estimateFee(144),
+_blockchain.estimateFee(504),
+_blockchain.estimateFee(1008),
+```
+
+Now we can use the `calculateFeeRates` method to show different fee rates in the `SendTab` UI. We can add a new method to the `SendController` to call the `calculateFeeRates` method and update the state with the fee rates. First we have to add a new field to the `SendState` to hold the fee rates. To keep it simple, just add a list of doubles to the `SendState`:
+
+```dart
+final List<double>? recommendedFeeRates;
+```
+
+Then we can add a new method to the `SendController` to call the `calculateFeeRates` method and update the state with the fee rates:
+
+```dart
+Future<void> fetchRecommendedFeeRates() async {
+  final state = _getState();
+  try {
+    final fetchedRates = await (_bitcoinWalletService as BitcoinWalletService)
+        .calculateFeeRates();
+
+    final recommendedFeeRates = {
+      fetchedRates.highPriority,
+      fetchedRates.mediumPriority,
+      fetchedRates.lowPriority,
+      fetchedRates.noPriority
+    }.toList();
+
+    _updateState(
+      state.copyWith(
+        recommendedFeeRates: recommendedFeeRates,
+        satPerVbyte: fetchedRates.mediumPriority,
+      ),
+    );
+  } catch (e) {
+    print(e);
+    _updateState(state.copyWith(
+      error: FeeRecommendationNotAvailableException(),
+    ));
+  }
+}
+```
+
+In this method, we fetch the fees using the `BitcoinWalletService`, create a set to eliminate duplicate values and convert it to a list to set the `recommendedFeeRates` field of the state. We also set the `satPerVbyte` field of the state to the fee rate for the medium priority. We also catch any errors and set the error field of the state to show the user that the fee recommendation is not available.
+
+Now we can call this method in the `initState` method of the `SendTab` to fetch the fee rates when the `SendTab` is opened:
+
+```dart
+@override
+void initState() {
+  super.initState();
+
+  _controller = SendController(
+    getState: () => _state,
+    updateState: (SendState state) => setState(() => _state = state),
+    bitcoinWalletService: widget.bitcoinWalletService,
+  );
+
+  _controller.fetchRecommendedFeeRates(); // Add this
+}
+```
+
+Now we can use the state to make the `Slider` work and have the selected fee rate be shown:
+
+```dart
+// ... SendTab widget
+// Fee rate slider
+_state.recommendedFeeRates == null
+    ? const CircularProgressIndicator()
+    : SizedBox(
+        width: 250,
+        child: Column(
+          children: [
+            Slider(
+              value: _state.satPerVbyte ?? 0,
+              onChanged: null,
+              divisions: _state.recommendedFeeRates!.length - 1,
+              min: _state.recommendedFeeRates!.last,
+              max: _state.recommendedFeeRates!.first,
+              label: _state.satPerVbyte! <=
+                      _state.recommendedFeeRates!.last
+                  ? 'low priority'
+                  : _state.satPerVbyte! >=
+                          _state.recommendedFeeRates!.first
+                      ? 'high priority'
+                      : 'medium priority',
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: kSpacingUnit * 1.5,
+              ),
+              child: Text(
+                'The fee rate to pay for this transaction: ${_state.satPerVbyte ?? 0} sat/vB.',
+                style: theme.textTheme.bodySmall,
+              ),
+            ),
+          ],
+        ),
+      ),
+// ... rest of SendTab widget
+```
+
+The `Slider` will not work yet though, we still need the `onChanged` property to be set to a method that updates the state with the selected fee rate. We can add a new method to the `SendController` to do this and then add it to the `onChanged` property of the `Slider`:
+
+```dart
+// ... in the SendController class
+void feeRateChangeHandler(double feeRate) {
+  _updateState(_getState().copyWith(satPerVbyte: feeRate));
+}
+```
+
+```dart
+// ... in the Slider of the SendTab widget
+onChanged: _controller.feeRateChangeHandler,
+```
+
+Now the `Slider` should work and the selected fee rate should be selected and shown like this:
+
+![Slider](https://github.com/belgian-bitcoin-embassy/mobile-dev-workshops/assets/92805150/d5f3f24c-84f2-4c7b-86e4-e5692b4211d9)
+
+The Slider experience might not be the best experience for a production app, but I hope you at least get the idea of how you could use the fee rates to show the user the difference in fee rates for different priorities and how you could let the user set the fee rate themselves.
+
 ### 7. Bonus: Backup wallet
 
 If time permits during the workshop we will add a way to show the mnemonic recovery phrase of the wallet from the menu.
@@ -2724,23 +2983,3 @@ The [Lightning Development Kit (LDK)](https://lightningdevkit.org) will be used 
 ## Workshop 3: Other Lightning libraries and Lightning Service Provider integration
 
 In this workshop, some other ways to embed a Lightning wallet, like [Breez SDK](https://sdk-doc.breez.technology/), will be shown and we will improve the UX (User eXperience) of the app by integrating with [Lightning Service Providers (LSP's)](https://github.com/BitcoinAndLightningLayerSpecs/lsp).
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```

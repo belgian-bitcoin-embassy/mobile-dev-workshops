@@ -26,6 +26,8 @@ class SendTabState extends State<SendTab> {
       updateState: (SendState state) => setState(() => _state = state),
       bitcoinWalletService: widget.bitcoinWalletService,
     );
+
+    _controller.fetchRecommendedFeeRates();
   }
 
   @override
@@ -67,25 +69,38 @@ class SendTabState extends State<SendTab> {
         ),
         const SizedBox(height: kSpacingUnit * 2),
         // Fee rate slider
-        SizedBox(
-          width: 250,
-          child: Column(
-            children: [
-              const Slider(
-                value: 0.5,
-                onChanged: null,
-              ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: kSpacingUnit * 1.5),
-                child: Text(
-                  'The fee rate (sat/vB) to pay for this transaction.',
-                  style: theme.textTheme.bodySmall,
+        _state.recommendedFeeRates == null
+            ? const CircularProgressIndicator()
+            : SizedBox(
+                width: 250,
+                child: Column(
+                  children: [
+                    Slider(
+                      value: _state.satPerVbyte ?? 0,
+                      onChanged: _controller.feeRateChangeHandler,
+                      divisions: _state.recommendedFeeRates!.length - 1,
+                      min: _state.recommendedFeeRates!.last,
+                      max: _state.recommendedFeeRates!.first,
+                      label: _state.satPerVbyte! <=
+                              _state.recommendedFeeRates!.last
+                          ? 'low priority'
+                          : _state.satPerVbyte! >=
+                                  _state.recommendedFeeRates!.first
+                              ? 'high priority'
+                              : 'medium priority',
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: kSpacingUnit * 1.5,
+                      ),
+                      child: Text(
+                        'The fee rate to pay for this transaction: ${_state.satPerVbyte ?? 0} sat/vB.',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
         const SizedBox(height: kSpacingUnit * 2),
         // Error message
         SizedBox(
@@ -114,7 +129,19 @@ class SendTabState extends State<SendTab> {
                   _state.error is NotEnoughFundsException ||
                   _state.isMakingPayment
               ? null
-              : _controller.makePayment,
+              : () => _controller.makePayment().then(
+                    (_) {
+                      if (_state.txId != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                                'Payment successful. Tx ID: ${_state.partialTxId}'),
+                          ),
+                        );
+                        Navigator.pop(context);
+                      }
+                    },
+                  ),
           label: const Text('Send funds'),
           icon: _state.isMakingPayment
               ? const CircularProgressIndicator()

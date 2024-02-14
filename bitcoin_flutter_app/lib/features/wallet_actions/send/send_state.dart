@@ -9,6 +9,8 @@ class SendState extends Equatable {
     this.satPerVbyte,
     this.isMakingPayment = false,
     this.error,
+    this.recommendedFeeRates,
+    this.txId,
   });
 
   final int? amountSat;
@@ -16,6 +18,8 @@ class SendState extends Equatable {
   final double? satPerVbyte;
   final bool isMakingPayment;
   final Exception? error;
+  final List<double>? recommendedFeeRates;
+  final String? txId;
 
   double? get amountBtc {
     if (amountSat == null) {
@@ -32,6 +36,8 @@ class SendState extends Equatable {
     bool? isMakingPayment,
     Exception? error,
     bool? clearError,
+    List<double>? recommendedFeeRates,
+    String? txId,
   }) {
     return SendState(
       amountSat: amountSat ?? this.amountSat,
@@ -39,7 +45,17 @@ class SendState extends Equatable {
       satPerVbyte: satPerVbyte ?? this.satPerVbyte,
       isMakingPayment: isMakingPayment ?? this.isMakingPayment,
       error: clearError == true ? null : error ?? this.error,
+      recommendedFeeRates: recommendedFeeRates ?? this.recommendedFeeRates,
+      txId: txId ?? this.txId,
     );
+  }
+
+  String? get partialTxId {
+    if (txId == null) {
+      return null;
+    }
+
+    return '${txId!.substring(0, 8)}...${txId!.substring(txId!.length - 8)}';
   }
 
   @override
@@ -49,5 +65,7 @@ class SendState extends Equatable {
         satPerVbyte,
         isMakingPayment,
         error,
+        recommendedFeeRates,
+        txId,
       ];
 }
