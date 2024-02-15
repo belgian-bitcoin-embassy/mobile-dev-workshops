@@ -16,94 +16,66 @@ class BitcoinWalletService implements WalletService {
       : _mnemonicRepository = mnemonicRepository;
 
   Future<void> init() async {
-    print('Initializing BitcoinWalletService...');
-    await _initBlockchain();
-    print('Blockchain initialized!');
+    // 12. Initialize the blockchain by calling the _initBlockchain method
 
-    final mnemonic = await _mnemonicRepository.getMnemonic();
-    if (mnemonic != null && mnemonic.isNotEmpty) {
-      await _initWallet(await Mnemonic.fromString(mnemonic));
-      await sync();
-      print('Wallet with mnemonic $mnemonic found, initialized and synced!');
-    } else {
-      print('No wallet found!');
-    }
+    // 13. Use the mnemonic repository to check if a mnemonic already exists.
+    //  If it does, call the _initWallet method with the mnemonic and then call
+    //  the sync method so the wallet is up to date.
   }
 
   @override
   Future<void> addWallet() async {
-    final mnemonic = await Mnemonic.create(WordCount.Words12);
-    await _mnemonicRepository.setMnemonic(mnemonic.asString());
-    await _initWallet(mnemonic);
-    print(
-        'Wallet added with mnemonic: ${mnemonic.asString()} and initialized!');
+    // 1. Use BDKs Mnemonic class to generate a new 12-word mnemonic
+
+    // 2. Store the mnemonic in secure local storage using the MnemonicRepository
+
+    // 10. Call the _initWallet method with the generated mnemonic
   }
 
   @override
   Future<void> deleteWallet() async {
-    await _mnemonicRepository.deleteMnemonic();
+    // 3. Delete the mnemonic from secure local storage using the MnemonicRepository
+
     _wallet = null;
   }
 
   @override
   Future<int> getSpendableBalanceSat() async {
-    final balance = await _wallet!.getBalance();
-
-    print('Confirmed balance: ${balance.confirmed}');
-    print('Spendable balance: ${balance.spendable}');
-    print('Unconfirmed balance: ${balance.immature}');
-    print('Trusted pending balance: ${balance.trustedPending}');
-    print('Pending balance: ${balance.untrustedPending}');
-    print('Total balance: ${balance.total}');
-
-    return balance.spendable;
+    // 14. Call the getBalance method from the Wallet and return the spendable balance
+    //  from it
+    return 0;
   }
 
   bool get hasWallet => _wallet != null;
 
   Future<void> sync() async {
-    await _wallet!.sync(_blockchain);
+    // 11. Call the sync method on the _wallet field passing the _blockchain field
   }
 
   Future<void> _initBlockchain() async {
-    _blockchain = await Blockchain.create(
-      config: const BlockchainConfig.electrum(
-        config: ElectrumConfig(
-          retry: 5,
-          url: "ssl://electrum.blockstream.info:60002",
-          validateDomain: false,
-          stopGap: 10,
-        ),
-      ),
-    );
+    // 4. Initialize the Blockchain object by creating a new instance of the
+    //  Blockchain class and configuring it to use an Electrum server.
+    //  For testing purposes, you can use the following Blockstream Electrum
+    //  server url: ssl://electrum.blockstream.info:60002
   }
 
   Future<void> _initWallet(Mnemonic mnemonic) async {
-    final descriptors = await _getBip84TemplateDescriptors(mnemonic);
-    _wallet = await Wallet.create(
-      descriptor: descriptors.$1,
-      changeDescriptor: descriptors.$2,
-      network: Network.Testnet,
-      databaseConfig: const DatabaseConfig
-          .memory(), // Txs and UTXOs related to the wallet will be stored in memory
-    );
+    // 9. Initialze the _wallet field by creating a new instance of the
+    //  Wallet class using the receive and change descriptors from the
+    //  _getBip84TemplateDescriptors method and an in-memory database.
   }
 
-  Future<(Descriptor receive, Descriptor change)> _getBip84TemplateDescriptors(
+  Future<void> _getBip84TemplateDescriptors(
     Mnemonic mnemonic,
   ) async {
-    const network = Network.Testnet;
-    final secretKey =
-        await DescriptorSecretKey.create(network: network, mnemonic: mnemonic);
-    final receivingDescriptor = await Descriptor.newBip84(
-        secretKey: secretKey,
-        network: network,
-        keychain: KeychainKind.External);
-    final changeDescriptor = await Descriptor.newBip84(
-        secretKey: secretKey,
-        network: network,
-        keychain: KeychainKind.Internal);
+    // 5. Create a new secret master key for Testnet from the mnemonic using the
+    //  DescriptorSecretKey class.
 
-    return (receivingDescriptor, changeDescriptor);
+    // 6. Create a Native Segwit (BIP84) descriptor to generate receive (external) addresses
+
+    // 7. Create a Native Segwit (BIP84) descriptor to generate change (internal) addresses
+
+    // 8. Return the receive and change descriptors as a tuple
+    //  (also chanege the return type of the method accordingly)
   }
 }
