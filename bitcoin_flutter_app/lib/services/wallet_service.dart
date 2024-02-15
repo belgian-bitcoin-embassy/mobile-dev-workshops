@@ -73,16 +73,10 @@ class BitcoinWalletService implements WalletService {
 
   @override
   Future<List<TransactionEntity>> getTransactions() async {
-    final transactions = await _wallet!.listTransactions(true);
+    // 1. List all transactions from the wallet
 
-    return transactions.map((tx) {
-      return TransactionEntity(
-        id: tx.txid,
-        receivedAmountSat: tx.received,
-        sentAmountSat: tx.sent,
-        timestamp: tx.confirmationTime?.timestamp,
-      );
-    }).toList();
+    // 2. Map the transactions as returned by BDK to our own TransactionEntity
+    //   data model and return them as a list
   }
 
   bool get hasWallet => _wallet != null;
