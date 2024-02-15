@@ -36,12 +36,12 @@ class BitcoinWalletService implements WalletService {
   Future<void> deleteWallet() async {
     // 3. Delete the mnemonic from secure local storage using the MnemonicRepository
 
-    _wallet = null;
+    // 14. Set the _wallet field to null so the hasWallet getter returns false
   }
 
   @override
   Future<int> getSpendableBalanceSat() async {
-    // 14. Call the getBalance method from the Wallet and return the spendable balance
+    // 15. Call the getBalance method from the Wallet and return the spendable balance
     //  from it
     return 0;
   }
