@@ -62,11 +62,9 @@ class BitcoinWalletService implements WalletService {
 
   @override
   Future<String> generateInvoice() async {
-    final invoice = await _wallet!.getAddress(
-      addressIndex: const AddressIndex(),
-    );
+    // 1. Get the next external address from the wallet
 
-    return invoice.address;
+    // 2. return the address as a string
   }
 
   bool get hasWallet => _wallet != null;
