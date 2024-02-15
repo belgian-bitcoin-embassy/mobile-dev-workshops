@@ -37,9 +37,9 @@ class ReceiveState extends Equatable {
     }
 
     return 'bitcoin:$bitcoinInvoice?'
-        '${amountBtc != null ? 'amount=$amountBtc&' : ''}'
-        '${label != null ? 'label=$label&' : ''}'
-        '${message != null ? 'message=$message' : ''}';
+        '${amountBtc != null ? 'amount=$amountBtc' : ''}'
+        '${label != null ? '&label=$label' : ''}'
+        '${message != null ? '&message=$message' : ''}';
   }
 
   ReceiveState copyWith({
