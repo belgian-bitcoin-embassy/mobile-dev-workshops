@@ -77,13 +77,8 @@ class BitcoinWalletService implements WalletService {
 
   Future<void> _initBlockchain() async {
     _blockchain = await Blockchain.create(
-      config: const BlockchainConfig.esplora(
-        config: EsploraConfig(
-          baseUrl: "http://10.0.2.2:3002",
-          stopGap: 10,
-        ),
-      ),
-    );
+        // 1. Change the blockchain configuration to use the local Esplora server
+        );
   }
 
   Future<void> _initWallet(Mnemonic mnemonic) async {
@@ -91,7 +86,7 @@ class BitcoinWalletService implements WalletService {
     _wallet = await Wallet.create(
       descriptor: descriptors.$1,
       changeDescriptor: descriptors.$2,
-      network: Network.Regtest,
+      network: // 2. Use the Regtest network
       databaseConfig: const DatabaseConfig
           .memory(), // Txs and UTXOs related to the wallet will be stored in memory
     );
@@ -100,7 +95,7 @@ class BitcoinWalletService implements WalletService {
   Future<(Descriptor receive, Descriptor change)> _getBip84TemplateDescriptors(
     Mnemonic mnemonic,
   ) async {
-    const network = Network.Regtest;
+    const network = // 3. Use the Regtest network
     final secretKey =
         await DescriptorSecretKey.create(network: network, mnemonic: mnemonic);
     final receivingDescriptor = await Descriptor.newBip84(
