@@ -99,29 +99,24 @@ class BitcoinWalletService implements WalletService {
     double? satPerVbyte,
     int? absoluteFeeSat,
   }) async {
-    if (amountSat == null) {
-      throw Exception('Amount is required for a bitcoin on-chain transaction!');
-    }
+    // 1. Check if an amount is provided since it's required for an on-chain transaction.
+    //  throw an exception if it's not provided
 
-    // Convert the invoice to an address
-    final address = await Address.create(address: invoice);
-    final script = await address
-        .scriptPubKey(); // Creates the output scripts so that the wallet that generated the address can spend the funds
-    var txBuilder = TxBuilder().addRecipient(script, amountSat);
+    // 2. Convert the invoice string to a BDK Address
 
-    // Set the fee rate for the transaction
-    if (satPerVbyte != null) {
-      txBuilder = txBuilder.feeRate(satPerVbyte);
-    } else if (absoluteFeeSat != null) {
-      txBuilder = txBuilder.feeAbsolute(absoluteFeeSat);
-    }
+    // 3. Get a script that locks the output to the address
 
-    final txBuilderResult = await txBuilder.finish(_wallet!);
-    final sbt = await _wallet!.sign(psbt: txBuilderResult.psbt);
-    final tx = await sbt.extractTx();
-    await _blockchain.broadcast(tx);
+    // 4. Build a transaction and add the script as recipient and also set the amount
 
-    return tx.txid();
+    // 5. Set the fee rate for the transaction based on the provided fee rate or absolute fee
+
+    // 6. Finish the transaction building and sign it with the wallet
+
+    // 7. Extract the transaction from the finalized and signed PSBT
+
+    // 8. Broadcast the transaction to the network with the blockchain
+
+    // 9. Return the transaction id
   }
 
   Future<RecommendedFeeRatesEntity> calculateFeeRates() async {
