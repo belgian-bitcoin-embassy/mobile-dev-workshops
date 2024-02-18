@@ -6,25 +6,31 @@ import 'package:flutter/material.dart';
 @immutable
 class HomeState extends Equatable {
   const HomeState({
-    this.walletBalance,
-    this.transactions = const [],
+    this.walletBalances = const [],
+    this.transactionLists = const [],
+    this.transactionListIndex = 0,
   });
 
-  final WalletBalanceViewModel? walletBalance;
-  final List<TransactionsListItemViewModel> transactions;
+  final List<WalletBalanceViewModel> walletBalances;
+  final List<List<TransactionsListItemViewModel>?> transactionLists;
+  final int transactionListIndex;
 
   HomeState copyWith({
-    WalletBalanceViewModel? walletBalance,
-    bool clearWalletBalance = false,
-    List<TransactionsListItemViewModel>? transactions,
+    List<WalletBalanceViewModel>? walletBalances,
+    List<List<TransactionsListItemViewModel>?>? transactionLists,
+    int? transactionListIndex,
   }) {
     return HomeState(
-      walletBalance:
-          clearWalletBalance ? null : walletBalance ?? this.walletBalance,
-      transactions: transactions ?? this.transactions,
+      walletBalances: walletBalances ?? this.walletBalances,
+      transactionLists: transactionLists ?? this.transactionLists,
+      transactionListIndex: transactionListIndex ?? this.transactionListIndex,
     );
   }
 
   @override
-  List<Object?> get props => [walletBalance, transactions];
+  List<Object?> get props => [
+        walletBalances,
+        transactionLists,
+        transactionListIndex,
+      ];
 }

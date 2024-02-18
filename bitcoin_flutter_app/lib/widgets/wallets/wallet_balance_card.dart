@@ -1,4 +1,6 @@
+import 'package:bdk_flutter/bdk_flutter.dart';
 import 'package:bitcoin_flutter_app/constants.dart';
+import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
 import 'package:bitcoin_flutter_app/view_models/wallet_balance_view_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
@@ -9,7 +11,7 @@ class WalletBalanceCard extends StatelessWidget {
       : super(key: key);
 
   final WalletBalanceViewModel walletBalance;
-  final VoidCallback onDelete;
+  final Function(WalletType) onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +38,9 @@ class WalletBalanceCard extends StatelessWidget {
                   width: double.infinity,
                   color: theme.colorScheme.primaryContainer,
                   child: SvgPicture.asset(
-                    'assets/icons/bitcoin_savings.svg',
+                    walletBalance.walletType == WalletType.onChain
+                        ? 'assets/icons/bitcoin_savings.svg'
+                        : 'assets/icons/lightning_spending.svg',
                     fit: BoxFit
                         .none, // Don't scale the SVG, keep it at its original size
                   ),
@@ -49,12 +53,14 @@ class WalletBalanceCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          walletBalance.walletName,
+                          walletBalance.walletType.label,
                           style: theme.textTheme.labelMedium,
                         ),
                         const SizedBox(height: kSpacingUnit),
                         Text(
-                          '${walletBalance.balanceBtc} BTC',
+                          walletBalance.walletType == WalletType.onChain
+                              ? '${walletBalance.balanceBtc} BTC'
+                              : '${walletBalance.balanceSat} sats',
                           style: theme.textTheme.bodyMedium,
                         ),
                       ],
@@ -67,7 +73,7 @@ class WalletBalanceCard extends StatelessWidget {
               top: 0,
               right: 0,
               child: CloseButton(
-                onPressed: onDelete,
+                onPressed: () => onDelete(walletBalance.walletType),
                 style: ButtonStyle(
                   padding: MaterialStateProperty.all(
                     EdgeInsets.zero,

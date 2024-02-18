@@ -6,23 +6,32 @@ import 'package:flutter/material.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Instantiate the wallet service in the main so
-  // we can have one instance of the service for the entire app...
+  // Instantiate the wallet services in the main so
+  // we can have one service instance of every wallet for the entire app...
   final bitcoinWalletService = BitcoinWalletService(
+    mnemonicRepository: SecureStorageMnemonicRepository(),
+  );
+  final LightningWalletService lightningWalletService = LightningWalletService(
     mnemonicRepository: SecureStorageMnemonicRepository(),
   );
   // ...and have it initialized before the app starts.
   await bitcoinWalletService.init();
+  await lightningWalletService.init();
 
   runApp(MyApp(
     bitcoinWalletService: bitcoinWalletService,
+    lightningWalletService: lightningWalletService,
   ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({required this.bitcoinWalletService, super.key});
+  const MyApp(
+      {required this.bitcoinWalletService,
+      required this.lightningWalletService,
+      super.key});
 
-  final WalletService bitcoinWalletService;
+  final BitcoinWalletService bitcoinWalletService;
+  final LightningWalletService lightningWalletService;
 
   // This widget is the root of your application.
   @override
@@ -50,6 +59,7 @@ class MyApp extends StatelessWidget {
       ),
       home: HomeScreen(
         bitcoinWalletService: bitcoinWalletService,
+        lightningWalletService: lightningWalletService,
       ),
     );
   }

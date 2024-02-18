@@ -9,9 +9,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({required this.bitcoinWalletService, super.key});
+  const HomeScreen({
+    required this.bitcoinWalletService,
+    required this.lightningWalletService,
+    super.key,
+  });
 
-  final WalletService bitcoinWalletService;
+  final BitcoinWalletService bitcoinWalletService;
+  final LightningWalletService lightningWalletService;
 
   @override
   HomeScreenState createState() => HomeScreenState();
@@ -28,7 +33,10 @@ class HomeScreenState extends State<HomeScreen> {
     _controller = HomeController(
       getState: () => _state,
       updateState: (HomeState state) => setState(() => _state = state),
-      bitcoinWalletService: widget.bitcoinWalletService,
+      walletServices: [
+        widget.bitcoinWalletService,
+        widget.lightningWalletService
+      ],
     );
     _controller.init();
   }
@@ -47,13 +55,15 @@ class HomeScreenState extends State<HomeScreen> {
             SizedBox(
               height: kSpacingUnit * 24,
               child: WalletCardsList(
-                _state.walletBalance == null ? [] : [_state.walletBalance!],
+                _state.walletBalances,
                 onAddNewWallet: _controller.addNewWallet,
                 onDeleteWallet: _controller.deleteWallet,
               ),
             ),
             TransactionsList(
-              transactions: _state.transactions,
+              transactions: _state.transactionLists.isNotEmpty
+                  ? _state.transactionLists[_state.transactionListIndex]
+                  : null,
             ),
           ],
         ),

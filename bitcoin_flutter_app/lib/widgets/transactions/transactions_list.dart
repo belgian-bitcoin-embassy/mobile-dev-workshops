@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 class TransactionsList extends StatelessWidget {
   const TransactionsList({super.key, required this.transactions});
 
-  final List<TransactionsListItemViewModel> transactions;
+  final List<TransactionsListItemViewModel>? transactions;
 
   @override
   Widget build(BuildContext context) {
@@ -28,10 +28,10 @@ class TransactionsList extends StatelessWidget {
               const NeverScrollableScrollPhysics(), // Scrolling is handled by the parent (ListView in HomeScreen)
           itemBuilder: (ctx, index) {
             return TransactionsListItem(
-              transaction: transactions[index],
+              transaction: transactions![index],
             );
           },
-          itemCount: transactions.length,
+          itemCount: transactions == null ? 0 : transactions!.length,
         ),
       ],
     );

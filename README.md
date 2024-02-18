@@ -2953,24 +2953,19 @@ Now the `Slider` should work and the selected fee rate should be selected and sh
 
 The Slider experience might not be the best experience for a production app, but I hope you at least get the idea of how you could use the fee rates to show the user the difference in fee rates for different priorities and how you could let the user set the fee rate themselves.
 
-### 7. Bonus: Backup wallet
+### Bonus: Wallet Backup and Recovery
 
-If time permits during the workshop we will add a way to show the mnemonic recovery phrase of the wallet from the menu.
-
-### 8. Bonus: Recover wallet
-
-If time permits during the workshop we will add a way to recover a wallet from a mnemonic recovery phrase instead of only being able to create a new wallet.
+If time permits during the workshop we will add a way to show the mnemonic recovery phrase of the wallet from the menu and a way to recover a wallet from a mnemonic recovery phrase instead of only being able to create a new wallet.
 
 ## Workshop 2: Lightning Network wallet
 
-In this workshop, we will add Lightning node functionality to the app like:
+In this workshop, we will add Lightning node/wallet functionality to the app like:
 
-- Displaying the Lightning balance
-- Toggle between values in BTC and in Satoshis
+- Displaying the spendable Lightning balance
 - Funding and opening a Lightning channel
 - Generating a Lightning invoice
 - Paying different types of payment requests (BOLT11, LNURL, Lightning Address, node public key, etc.)
-- Displaying the transaction history
+- Displaying the payment history
 - Displaying the channel list
 - Closing a Lightning channel
 
@@ -2978,7 +2973,17 @@ And if time permits:
 
 - Backing up the channels
 
-The [Lightning Development Kit (LDK)](https://lightningdevkit.org) will be used for this.
+### 7.Lightning Node initialization
+
+#### Lightning Development Kit (LDK)
+
+In the previous workshop we used the Bitcoin Development Kit to build an on-chain wallet, in this workshop the [Lightning Development Kit (LDK)](https://lightningdevkit.org) will be used. Similar to the Bitcoin Development Kit, the Lightning Development Kit is a set of libraries to build Lightning wallets and applications. It is a Rust library that permits creating a full Lightning Network node. A lot goes into creating a full Lightning Network node though, so luckily for us, a reference implementation for a full functional node build with LDK is available in another library called [LDK Node](https://github.com/lightningdevkit/ldk-node). This library also has a Flutter package that has bindings to the LDK Node library, so we can use it in our Flutter app and quickly have a real Lightning Node embedded and running on our mobile device. The Flutter package is called [ldk_node](https://pub.dev/packages/ldk_node) on pub.dev or [ldk-node-flutter](https://github.com/LtbLightning/ldk-node-flutter) on github.
+
+To add LDK Node to our app, run the following command from inside the `bitcoin_flutter_app` directory:
+
+```bash
+flutter pub add ldk_node
+```
 
 ## Workshop 3: Other Lightning libraries and Lightning Service Provider integration
 
