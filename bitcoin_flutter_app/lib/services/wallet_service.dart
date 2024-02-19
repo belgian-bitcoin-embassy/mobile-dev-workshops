@@ -246,19 +246,20 @@ class LightningWalletService implements WalletService {
     String? storedMnemonic =
         await _mnemonicRepository.getMnemonic(_walletType.label);
     if (storedMnemonic == null || storedMnemonic.isEmpty) {
-      final newMnemonic = await ldk_node.Mnemonic.generate();
+      mnemonic = await ldk_node.Mnemonic.generate();
       await _mnemonicRepository.setMnemonic(
         _walletType.label,
-        newMnemonic.seedPhrase,
+        mnemonic.seedPhrase,
       );
-      mnemonic = ldk_node.Mnemonic(newMnemonic.seedPhrase);
-      print('New mnemonic generated and stored: ${newMnemonic.seedPhrase}');
+
+      print('New mnemonic generated and stored: ${mnemonic.seedPhrase}');
     } else {
       mnemonic = ldk_node.Mnemonic(storedMnemonic);
     }
 
     _node = await _buildNode(mnemonic);
     await _node!.start();
+    await _node!.syncWallets();
     print(
       'Lightning Node added with node id: ${(await _node!.nodeId()).hexCode}',
     );

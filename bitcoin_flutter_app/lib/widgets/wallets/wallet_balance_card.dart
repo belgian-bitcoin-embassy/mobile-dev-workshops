@@ -1,4 +1,3 @@
-import 'package:bdk_flutter/bdk_flutter.dart';
 import 'package:bitcoin_flutter_app/constants.dart';
 import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
 import 'package:bitcoin_flutter_app/view_models/wallet_balance_view_model.dart';
