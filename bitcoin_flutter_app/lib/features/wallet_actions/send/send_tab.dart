@@ -2,6 +2,7 @@ import 'package:bitcoin_flutter_app/constants.dart';
 import 'package:bitcoin_flutter_app/features/wallet_actions/send/send_controller.dart';
 import 'package:bitcoin_flutter_app/features/wallet_actions/send/send_state.dart';
 import 'package:bitcoin_flutter_app/services/wallet_service.dart';
+import 'package:bitcoin_flutter_app/widgets/wallets/wallet_selection_field.dart';
 import 'package:flutter/material.dart';
 
 class SendTab extends StatefulWidget {
@@ -39,6 +40,10 @@ class SendTabState extends State<SendTab> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const SizedBox(height: kSpacingUnit * 2),
+        WalletSelectionField(
+          selectedWalletType: _state.walletType,
+          onWalletTypeChange: (_) {},
+        ),
         // Amount Field
         SizedBox(
           width: 250,
@@ -78,7 +83,9 @@ class SendTabState extends State<SendTab> {
                     Slider(
                       value: _state.satPerVbyte ?? 0,
                       onChanged: _controller.feeRateChangeHandler,
-                      divisions: _state.recommendedFeeRates!.length - 1,
+                      divisions: _state.recommendedFeeRates!.length - 1 > 0
+                          ? _state.recommendedFeeRates!.length - 1
+                          : 1,
                       min: _state.recommendedFeeRates!.last,
                       max: _state.recommendedFeeRates!.first,
                       label: _state.satPerVbyte! <=

@@ -11,12 +11,10 @@ import 'package:flutter_svg/svg.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
     required this.bitcoinWalletService,
-    required this.lightningWalletService,
     super.key,
   });
 
   final BitcoinWalletService bitcoinWalletService;
-  final LightningWalletService lightningWalletService;
 
   @override
   HomeScreenState createState() => HomeScreenState();
@@ -35,7 +33,6 @@ class HomeScreenState extends State<HomeScreen> {
       updateState: (HomeState state) => setState(() => _state = state),
       walletServices: [
         widget.bitcoinWalletService,
-        widget.lightningWalletService
       ],
     );
     _controller.init();

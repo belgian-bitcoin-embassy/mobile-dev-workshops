@@ -6,7 +6,6 @@ import 'package:bitcoin_flutter_app/entities/transaction_entity.dart';
 import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
 import 'package:bitcoin_flutter_app/repositories/mnemonic_repository.dart';
 import 'package:ldk_node/ldk_node.dart' as ldk_node;
-import 'package:path_provider/path_provider.dart';
 
 abstract class WalletService {
   Future<void> init();
@@ -15,7 +14,7 @@ abstract class WalletService {
   bool get hasWallet;
   Future<void> deleteWallet();
   Future<int> getSpendableBalanceSat();
-  Future<String> generateInvoice();
+  Future<(String? bitcoinInvoice, String? lightningInvoice)> generateInvoices();
   Future<List<TransactionEntity>> getTransactions();
   Future<String> pay(
     String invoice, {
@@ -98,12 +97,12 @@ class BitcoinWalletService implements WalletService {
   }
 
   @override
-  Future<String> generateInvoice() async {
+  Future<(String?, String?)> generateInvoices() async {
     final invoice = await _wallet!.getAddress(
       addressIndex: const AddressIndex(),
     );
 
-    return invoice.address;
+    return (invoice.address, null);
   }
 
   @override
@@ -229,73 +228,32 @@ class LightningWalletService implements WalletService {
 
   @override
   Future<void> init() async {
-    final mnemonic = await _mnemonicRepository.getMnemonic(_walletType.label);
-    if (mnemonic != null && mnemonic.isNotEmpty) {
-      _node = await _buildNode(ldk_node.Mnemonic(mnemonic));
-      await _node!.start();
-    }
+    throw UnimplementedError();
   }
 
   @override
   WalletType get walletType => _walletType;
 
   @override
-  Future<void> addWallet() async {
-    ldk_node.Mnemonic mnemonic;
-
-    String? storedMnemonic =
-        await _mnemonicRepository.getMnemonic(_walletType.label);
-    if (storedMnemonic == null || storedMnemonic.isEmpty) {
-      final newMnemonic = await ldk_node.Mnemonic.generate();
-      await _mnemonicRepository.setMnemonic(
-        _walletType.label,
-        newMnemonic.seedPhrase,
-      );
-      mnemonic = ldk_node.Mnemonic(newMnemonic.seedPhrase);
-      print('New mnemonic generated and stored: ${newMnemonic.seedPhrase}');
-    } else {
-      mnemonic = ldk_node.Mnemonic(storedMnemonic);
-    }
-
-    _node = await _buildNode(mnemonic);
-    await _node!.start();
-    print(
-      'Lightning Node added with node id: ${(await _node!.nodeId()).hexCode}',
-    );
-  }
+  Future<void> addWallet() async {}
 
   @override
   bool get hasWallet => _node != null;
 
   @override
   Future<void> deleteWallet() async {
-    if (_node != null) {
-      await _node!.stop();
-      await _clearCache();
-      await _mnemonicRepository.deleteMnemonic(_walletType.label);
-      _node = null;
-    }
+    throw UnimplementedError();
   }
 
   @override
-  Future<String> generateInvoice() {
+  Future<(String?, String?)> generateInvoices() async {
     // TODO: implement generateInvoice
     throw UnimplementedError();
   }
 
   @override
   Future<int> getSpendableBalanceSat() async {
-    if (_node == null) {
-      throw NoWalletException('A Lightning node has to be initialized first!');
-    }
-
-    final channels = await _node!.listChannels();
-    final balanceMsat = channels.fold(
-      0,
-      (sum, channel) =>
-          channel.isUsable ? sum + channel.outboundCapacityMsat : sum,
-    );
-    return balanceMsat ~/ 1000;
+    throw UnimplementedError();
   }
 
   @override
@@ -308,40 +266,6 @@ class LightningWalletService implements WalletService {
       {int? amountSat, double? satPerVbyte, int? absoluteFeeSat}) {
     // TODO: implement pay
     throw UnimplementedError();
-  }
-
-  Future<ldk_node.Node> _buildNode(ldk_node.Mnemonic mnemonic) async {
-    final builder = ldk_node.Builder()
-        .setStorageDirPath(await _nodePath)
-        .setEntropyBip39Mnemonic(mnemonic: mnemonic)
-        .setEsploraServer(
-          Platform.isAndroid
-              ?
-              //10.0.2.2 to access the AVD
-              'http://10.0.2.2:3002'
-              : 'http://127.0.0.1:3002',
-        )
-        .setNetwork(ldk_node.Network.Regtest);
-
-    try {
-      final node = await builder.build();
-      return node;
-    } catch (e) {
-      print('Error building Lightning node: $e');
-    }
-    return builder.build();
-  }
-
-  Future<String> get _nodePath async {
-    final directory = await getApplicationDocumentsDirectory();
-    return "${directory.path}/ldk_cache/";
-  }
-
-  Future<void> _clearCache() async {
-    final directory = Directory(await _nodePath);
-    if (await directory.exists()) {
-      await directory.delete(recursive: true);
-    }
   }
 }
 

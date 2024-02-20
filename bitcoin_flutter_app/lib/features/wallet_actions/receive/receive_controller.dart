@@ -1,3 +1,4 @@
+import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
 import 'package:bitcoin_flutter_app/features/wallet_actions/receive/receive_state.dart';
 import 'package:bitcoin_flutter_app/services/wallet_service.dart';
 
@@ -51,8 +52,9 @@ class ReceiveController {
     try {
       _updateState(_getState().copyWith(isGeneratingInvoice: true));
 
-      final invoice = await _bitcoinWalletService.generateInvoice();
-      _updateState(_getState().copyWith(bitcoinInvoice: invoice));
+      final (bitcoinInvoice, _) =
+          await _bitcoinWalletService.generateInvoices();
+      _updateState(_getState().copyWith(bitcoinInvoice: bitcoinInvoice));
     } catch (e) {
       print(e);
     } finally {

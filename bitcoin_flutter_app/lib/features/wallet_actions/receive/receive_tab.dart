@@ -1,7 +1,9 @@
 import 'package:bitcoin_flutter_app/constants.dart';
+import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
 import 'package:bitcoin_flutter_app/features/wallet_actions/receive/receive_controller.dart';
 import 'package:bitcoin_flutter_app/features/wallet_actions/receive/receive_state.dart';
 import 'package:bitcoin_flutter_app/services/wallet_service.dart';
+import 'package:bitcoin_flutter_app/widgets/wallets/wallet_selection_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -40,6 +42,8 @@ class ReceiveTabState extends State<ReceiveTab> {
             ? const CircularProgressIndicator()
             : _state.bip21Uri == null || _state.bip21Uri!.isEmpty
                 ? ReceiveTabInputFields(
+                    selectedWalletType: _state.walletType,
+                    onWalletTypeChange: (_) {},
                     canGenerateInvoice:
                         (widget.bitcoinWalletService as BitcoinWalletService)
                             .hasWallet,
@@ -61,6 +65,8 @@ class ReceiveTabState extends State<ReceiveTab> {
 class ReceiveTabInputFields extends StatelessWidget {
   const ReceiveTabInputFields({
     Key? key,
+    required this.selectedWalletType,
+    required this.onWalletTypeChange,
     required this.canGenerateInvoice,
     required this.amountChangeHandler,
     required this.labelChangeHandler,
@@ -69,6 +75,8 @@ class ReceiveTabInputFields extends StatelessWidget {
     required this.generateInvoiceHandler,
   }) : super(key: key);
 
+  final WalletType selectedWalletType;
+  final Function(WalletType) onWalletTypeChange;
   final bool canGenerateInvoice;
   final Function(String?) amountChangeHandler;
   final Function(String?) labelChangeHandler;
@@ -82,6 +90,12 @@ class ReceiveTabInputFields extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        const SizedBox(height: kSpacingUnit * 2),
+        // Wallet Selection
+        WalletSelectionField(
+          selectedWalletType: selectedWalletType,
+          onWalletTypeChange: onWalletTypeChange,
+        ),
         const SizedBox(height: kSpacingUnit * 2),
         // Amount Field
         SizedBox(

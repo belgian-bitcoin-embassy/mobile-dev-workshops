@@ -1,9 +1,11 @@
+import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
 @immutable
 class SendState extends Equatable {
   const SendState({
+    this.walletType = WalletType.onChain,
     this.amountSat,
     this.invoice,
     this.satPerVbyte,
@@ -13,6 +15,7 @@ class SendState extends Equatable {
     this.txId,
   });
 
+  final WalletType walletType;
   final int? amountSat;
   final String? invoice;
   final double? satPerVbyte;
@@ -30,6 +33,7 @@ class SendState extends Equatable {
   }
 
   SendState copyWith({
+    WalletType? walletType,
     int? amountSat,
     String? invoice,
     double? satPerVbyte,
@@ -40,6 +44,7 @@ class SendState extends Equatable {
     String? txId,
   }) {
     return SendState(
+      walletType: walletType ?? this.walletType,
       amountSat: amountSat ?? this.amountSat,
       invoice: invoice ?? this.invoice,
       satPerVbyte: satPerVbyte ?? this.satPerVbyte,
@@ -60,6 +65,7 @@ class SendState extends Equatable {
 
   @override
   List<Object?> get props => [
+        walletType,
         amountSat,
         invoice,
         satPerVbyte,

@@ -19,9 +19,6 @@ void main() {
       bitcoinWalletService: BitcoinWalletService(
         mnemonicRepository: SecureStorageMnemonicRepository(),
       ),
-      lightningWalletService: LightningWalletService(
-        mnemonicRepository: SecureStorageMnemonicRepository(),
-      ),
     ));
 
     // Verify that our counter starts at 0.

@@ -357,8 +357,8 @@ packages:
     description:
       path: "."
       ref: "upgrade-v0.2.1"
-      resolved-ref: dad6e88c80acf940d068c14dbd7a8d170f05a690
-      url: "https://github.com/LtbLightning/ldk-node-flutter"
+      resolved-ref: "45dea22c9d9626e5eb2425416f6ed20e26fd1e5e"
+      url: "https://github.com/kumulynja/ldk-node-flutter"
     source: git
     version: "0.2.1"
   lints:
