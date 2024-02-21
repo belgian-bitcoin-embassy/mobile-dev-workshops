@@ -5,15 +5,29 @@ import 'package:bitcoin_flutter_app/services/wallet_service.dart';
 class ReceiveController {
   final ReceiveState Function() _getState;
   final Function(ReceiveState state) _updateState;
-  final WalletService _bitcoinWalletService;
+  final List<WalletService> _walletServices;
 
   ReceiveController({
     required getState,
     required updateState,
-    required bitcoinWalletService,
+    required walletServices,
   })  : _getState = getState,
         _updateState = updateState,
-        _bitcoinWalletService = bitcoinWalletService;
+        _walletServices = walletServices {
+    // Check which wallet service has a wallet and set the wallet type
+    final availableWallets = _walletServices
+        .where((service) => service.hasWallet)
+        .map((service) => service.walletType)
+        .toList();
+    _updateState(_getState().copyWith(
+      selectedWallet: availableWallets.first,
+      availableWallets: availableWallets,
+    ));
+  }
+
+  void onWalletTypeChange(WalletType wallet) {
+    _updateState(_getState().copyWith(selectedWallet: wallet));
+  }
 
   void amountChangeHandler(String? amount) async {
     try {
@@ -50,11 +64,18 @@ class ReceiveController {
 
   Future<void> generateInvoice() async {
     try {
-      _updateState(_getState().copyWith(isGeneratingInvoice: true));
+      final state = _getState();
+      _updateState(state.copyWith(isGeneratingInvoice: true));
 
-      final (bitcoinInvoice, _) =
-          await _bitcoinWalletService.generateInvoices();
-      _updateState(_getState().copyWith(bitcoinInvoice: bitcoinInvoice));
+      final (bitcoinInvoice, lightningInvoice) =
+          await _selectedWalletService.generateInvoices(
+        amountSat: state.amountSat,
+        description: '${state.label} - ${state.message}',
+      );
+      _updateState(_getState().copyWith(
+        bitcoinInvoice: bitcoinInvoice,
+        lightningInvoice: lightningInvoice,
+      ));
     } catch (e) {
       print(e);
     } finally {
@@ -63,6 +84,19 @@ class ReceiveController {
   }
 
   void editInvoice() {
-    _updateState(const ReceiveState());
+    final state = _getState();
+    _updateState(
+      ReceiveState(
+        selectedWallet: state.selectedWallet,
+        availableWallets: state.availableWallets,
+      ),
+    );
+  }
+
+  WalletService get _selectedWalletService {
+    final selectedWallet = _getState().selectedWallet;
+    return _walletServices.firstWhere(
+      (service) => service.walletType == selectedWallet,
+    );
   }
 }

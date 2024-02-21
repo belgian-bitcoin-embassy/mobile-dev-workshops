@@ -16,10 +16,12 @@ void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(MyApp(
-      bitcoinWalletService: BitcoinWalletService(
-        mnemonicRepository: SecureStorageMnemonicRepository(),
-      ),
-    ));
+        bitcoinWalletService: BitcoinWalletService(
+          mnemonicRepository: SecureStorageMnemonicRepository(),
+        ),
+        lightningWalletService: LightningWalletService(
+          mnemonicRepository: SecureStorageMnemonicRepository(),
+        )));
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);

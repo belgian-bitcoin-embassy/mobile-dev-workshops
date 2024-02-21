@@ -10,11 +10,11 @@ import 'package:flutter_svg/svg.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
-    required this.bitcoinWalletService,
+    required this.walletServices,
     super.key,
   });
 
-  final BitcoinWalletService bitcoinWalletService;
+  final List<WalletService> walletServices;
 
   @override
   HomeScreenState createState() => HomeScreenState();
@@ -31,9 +31,7 @@ class HomeScreenState extends State<HomeScreen> {
     _controller = HomeController(
       getState: () => _state,
       updateState: (HomeState state) => setState(() => _state = state),
-      walletServices: [
-        widget.bitcoinWalletService,
-      ],
+      walletServices: widget.walletServices,
     );
     _controller.init();
   }
@@ -70,7 +68,7 @@ class HomeScreenState extends State<HomeScreen> {
           context: context,
           isScrollControlled: true,
           builder: (context) => WalletActionsBottomSheet(
-            bitcoinWalletService: widget.bitcoinWalletService,
+            walletServices: widget.walletServices,
           ),
         ),
         child: SvgPicture.asset(

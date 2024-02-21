@@ -6,12 +6,12 @@ import 'package:flutter/material.dart';
 
 class WalletActionsBottomSheet extends StatelessWidget {
   const WalletActionsBottomSheet({
-    required WalletService bitcoinWalletService,
+    required List<WalletService> walletServices,
     Key? key,
-  })  : _bitcoinWalletService = bitcoinWalletService,
+  })  : _walletServices = walletServices,
         super(key: key);
 
-  final WalletService _bitcoinWalletService;
+  final List<WalletService> _walletServices;
 
   static const List<Tab> actionTabs = <Tab>[
     Tab(
@@ -44,10 +44,10 @@ class WalletActionsBottomSheet extends StatelessWidget {
           child: TabBarView(
             children: [
               ReceiveTab(
-                bitcoinWalletService: _bitcoinWalletService,
+                walletServices: _walletServices,
               ),
               SendTab(
-                bitcoinWalletService: _bitcoinWalletService,
+                walletServices: _walletServices,
               ),
             ],
           ),

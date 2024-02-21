@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 @immutable
 class ReceiveState extends Equatable {
   const ReceiveState({
-    this.walletType = WalletType.onChain,
+    this.selectedWallet,
+    this.availableWallets = const [],
     this.amountSat,
     this.isInvalidAmount = false,
     this.label,
@@ -15,7 +16,8 @@ class ReceiveState extends Equatable {
     this.isGeneratingInvoice = false,
   });
 
-  final WalletType walletType;
+  final WalletType? selectedWallet;
+  final List<WalletType> availableWallets;
   final int? amountSat;
   final bool isInvalidAmount;
   final String? label;
@@ -56,7 +58,8 @@ class ReceiveState extends Equatable {
   }
 
   ReceiveState copyWith({
-    WalletType? walletType,
+    WalletType? selectedWallet,
+    List<WalletType>? availableWallets,
     int? amountSat,
     bool? isInvalidAmount,
     String? label,
@@ -66,7 +69,8 @@ class ReceiveState extends Equatable {
     bool? isGeneratingInvoice,
   }) {
     return ReceiveState(
-      walletType: walletType ?? this.walletType,
+      selectedWallet: selectedWallet ?? this.selectedWallet,
+      availableWallets: availableWallets ?? this.availableWallets,
       amountSat: amountSat ?? this.amountSat,
       isInvalidAmount: isInvalidAmount ?? this.isInvalidAmount,
       label: label ?? this.label,
@@ -79,7 +83,8 @@ class ReceiveState extends Equatable {
 
   @override
   List<Object?> get props => [
-        walletType,
+        selectedWallet,
+        availableWallets,
         amountSat,
         isInvalidAmount,
         label,

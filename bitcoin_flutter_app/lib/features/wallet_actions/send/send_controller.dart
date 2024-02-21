@@ -5,15 +5,29 @@ import 'package:bitcoin_flutter_app/services/wallet_service.dart';
 class SendController {
   final SendState Function() _getState;
   final Function(SendState state) _updateState;
-  final WalletService _bitcoinWalletService;
+  final List<WalletService> _walletServices;
 
   SendController({
     required getState,
     required updateState,
-    required bitcoinWalletService,
+    required walletServices,
   })  : _getState = getState,
         _updateState = updateState,
-        _bitcoinWalletService = bitcoinWalletService;
+        _walletServices = walletServices {
+    // Check which wallet service has a wallet and set the wallet type
+    final availableWallets = _walletServices
+        .where((service) => service.hasWallet)
+        .map((service) => service.walletType)
+        .toList();
+    _updateState(_getState().copyWith(
+      selectedWallet: availableWallets.first,
+      availableWallets: availableWallets,
+    ));
+  }
+
+  void onWalletTypeChange(WalletType selectedWallet) {
+    _updateState(_getState().copyWith(selectedWallet: selectedWallet));
+  }
 
   void amountChangeHandler(String? amount) async {
     final state = _getState();
@@ -24,7 +38,7 @@ class SendController {
         final amountBtc = double.parse(amount);
         final int amountSat = (amountBtc * 100000000).round();
 
-        if (amountSat > await _bitcoinWalletService.getSpendableBalanceSat()) {
+        if (amountSat > await _selectedWalletService.getSpendableBalanceSat()) {
           _updateState(state.copyWith(
             error: NotEnoughFundsException(),
           ));
@@ -51,22 +65,25 @@ class SendController {
   Future<void> fetchRecommendedFeeRates() async {
     final state = _getState();
     try {
-      final fetchedRates = await (_bitcoinWalletService as BitcoinWalletService)
-          .calculateFeeRates();
+      if (_selectedWalletService is BitcoinWalletService) {
+        final fetchedRates =
+            await (_selectedWalletService as BitcoinWalletService)
+                .calculateFeeRates();
 
-      final recommendedFeeRates = {
-        fetchedRates.highPriority,
-        fetchedRates.mediumPriority,
-        fetchedRates.lowPriority,
-        fetchedRates.noPriority
-      }.toList();
+        final recommendedFeeRates = {
+          fetchedRates.highPriority,
+          fetchedRates.mediumPriority,
+          fetchedRates.lowPriority,
+          fetchedRates.noPriority
+        }.toList();
 
-      _updateState(
-        state.copyWith(
-          recommendedFeeRates: recommendedFeeRates,
-          satPerVbyte: fetchedRates.mediumPriority,
-        ),
-      );
+        _updateState(
+          state.copyWith(
+            recommendedFeeRates: recommendedFeeRates,
+            satPerVbyte: fetchedRates.mediumPriority,
+          ),
+        );
+      }
     } catch (e) {
       print(e);
       _updateState(state.copyWith(
@@ -84,7 +101,7 @@ class SendController {
     try {
       _updateState(state.copyWith(isMakingPayment: true));
 
-      final txId = await _bitcoinWalletService.pay(
+      final txId = await _selectedWalletService.pay(
         state.invoice!,
         amountSat: state.amountSat,
         satPerVbyte: state.satPerVbyte,
@@ -101,6 +118,13 @@ class SendController {
         error: PaymentException(),
       ));
     }
+  }
+
+  WalletService get _selectedWalletService {
+    final selectedWallet = _getState().selectedWallet;
+    return _walletServices.firstWhere(
+      (service) => service.walletType == selectedWallet,
+    );
   }
 }
 

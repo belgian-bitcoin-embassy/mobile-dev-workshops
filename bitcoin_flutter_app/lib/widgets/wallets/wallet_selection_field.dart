@@ -6,11 +6,13 @@ import 'package:flutter_svg/svg.dart';
 class WalletSelectionField extends StatelessWidget {
   const WalletSelectionField({
     super.key,
-    required this.selectedWalletType,
+    this.selectedWallet,
+    required this.availableWallets,
     required this.onWalletTypeChange,
   });
 
-  final WalletType selectedWalletType;
+  final WalletType? selectedWallet;
+  final List<WalletType> availableWallets;
   final Function(WalletType) onWalletTypeChange;
 
   @override
@@ -35,20 +37,42 @@ class WalletSelectionField extends StatelessWidget {
           child: Row(
             children: [
               SvgPicture.asset(
-                selectedWalletType == WalletType.onChain
+                selectedWallet == WalletType.onChain
                     ? 'assets/icons/bitcoin_savings.svg'
                     : 'assets/icons/lightning_spending.svg',
               ),
               const SizedBox(width: kSpacingUnit),
-              Text(selectedWalletType.label),
+              Text(selectedWallet!.label),
               const Spacer(),
               TextButton(
-                  child: const Text('Change'),
-                  onPressed: () => onWalletTypeChange(
-                        selectedWalletType == WalletType.onChain
-                            ? WalletType.lightning
-                            : WalletType.onChain,
-                      )),
+                onPressed: availableWallets.length > 1
+                    ? () {
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: const Text('Select Wallet'),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: availableWallets
+                                    .map(
+                                      (wallet) => ListTile(
+                                        title: Text(wallet.label),
+                                        onTap: () {
+                                          onWalletTypeChange(wallet);
+                                          Navigator.pop(context);
+                                        },
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            );
+                          },
+                        );
+                      }
+                    : null,
+                child: const Text('Change'),
+              ),
             ],
           ),
         ),

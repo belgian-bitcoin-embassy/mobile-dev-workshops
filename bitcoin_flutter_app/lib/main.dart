@@ -11,19 +11,28 @@ void main() async {
   final bitcoinWalletService = BitcoinWalletService(
     mnemonicRepository: SecureStorageMnemonicRepository(),
   );
-
+  final lightningWalletService = LightningWalletService(
+    mnemonicRepository: SecureStorageMnemonicRepository(),
+  );
   // ...and have it initialized before the app starts.
   await bitcoinWalletService.init();
+  await lightningWalletService.init();
 
   runApp(MyApp(
     bitcoinWalletService: bitcoinWalletService,
+    lightningWalletService: lightningWalletService,
   ));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({required this.bitcoinWalletService, super.key});
+  const MyApp({
+    required this.bitcoinWalletService,
+    required this.lightningWalletService,
+    super.key,
+  });
 
   final BitcoinWalletService bitcoinWalletService;
+  final LightningWalletService lightningWalletService;
 
   // This widget is the root of your application.
   @override
@@ -50,7 +59,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: HomeScreen(
-        bitcoinWalletService: bitcoinWalletService,
+        walletServices: [bitcoinWalletService, lightningWalletService],
       ),
     );
   }

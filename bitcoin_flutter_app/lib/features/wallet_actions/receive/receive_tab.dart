@@ -9,9 +9,9 @@ import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 class ReceiveTab extends StatefulWidget {
-  const ReceiveTab({required this.bitcoinWalletService, super.key});
+  const ReceiveTab({required this.walletServices, super.key});
 
-  final WalletService bitcoinWalletService;
+  final List<WalletService> walletServices;
 
   @override
   ReceiveTabState createState() => ReceiveTabState();
@@ -28,7 +28,7 @@ class ReceiveTabState extends State<ReceiveTab> {
     _controller = ReceiveController(
       getState: () => _state,
       updateState: (ReceiveState state) => setState(() => _state = state),
-      bitcoinWalletService: widget.bitcoinWalletService,
+      walletServices: widget.walletServices,
     );
   }
 
@@ -42,11 +42,9 @@ class ReceiveTabState extends State<ReceiveTab> {
             ? const CircularProgressIndicator()
             : _state.bip21Uri == null || _state.bip21Uri!.isEmpty
                 ? ReceiveTabInputFields(
-                    selectedWalletType: _state.walletType,
-                    onWalletTypeChange: (_) {},
-                    canGenerateInvoice:
-                        (widget.bitcoinWalletService as BitcoinWalletService)
-                            .hasWallet,
+                    selectedWallet: _state.selectedWallet,
+                    availableWallets: _state.availableWallets,
+                    onWalletTypeChange: _controller.onWalletTypeChange,
                     amountChangeHandler: _controller.amountChangeHandler,
                     labelChangeHandler: _controller.labelChangeHandler,
                     messageChangeHandler: _controller.messageChangeHandler,
@@ -65,9 +63,9 @@ class ReceiveTabState extends State<ReceiveTab> {
 class ReceiveTabInputFields extends StatelessWidget {
   const ReceiveTabInputFields({
     Key? key,
-    required this.selectedWalletType,
+    this.selectedWallet,
+    required this.availableWallets,
     required this.onWalletTypeChange,
-    required this.canGenerateInvoice,
     required this.amountChangeHandler,
     required this.labelChangeHandler,
     required this.messageChangeHandler,
@@ -75,9 +73,9 @@ class ReceiveTabInputFields extends StatelessWidget {
     required this.generateInvoiceHandler,
   }) : super(key: key);
 
-  final WalletType selectedWalletType;
+  final WalletType? selectedWallet;
+  final List<WalletType> availableWallets;
   final Function(WalletType) onWalletTypeChange;
-  final bool canGenerateInvoice;
   final Function(String?) amountChangeHandler;
   final Function(String?) labelChangeHandler;
   final Function(String?) messageChangeHandler;
@@ -93,7 +91,8 @@ class ReceiveTabInputFields extends StatelessWidget {
         const SizedBox(height: kSpacingUnit * 2),
         // Wallet Selection
         WalletSelectionField(
-          selectedWalletType: selectedWalletType,
+          selectedWallet: selectedWallet,
+          availableWallets: availableWallets,
           onWalletTypeChange: onWalletTypeChange,
         ),
         const SizedBox(height: kSpacingUnit * 2),
@@ -147,11 +146,7 @@ class ReceiveTabInputFields extends StatelessWidget {
         SizedBox(
           height: kSpacingUnit * 2,
           child: Text(
-            !canGenerateInvoice
-                ? 'You need to create a wallet first.'
-                : isInvalidAmount
-                    ? 'Please enter a valid amount.'
-                    : '',
+            isInvalidAmount ? 'Please enter a valid amount.' : '',
             style: const TextStyle(
               color: Colors.red,
             ),
@@ -160,7 +155,7 @@ class ReceiveTabInputFields extends StatelessWidget {
         const SizedBox(height: kSpacingUnit * 2),
         // Generate invoice Button
         ElevatedButton.icon(
-          onPressed: !canGenerateInvoice || isInvalidAmount
+          onPressed: availableWallets.isEmpty || isInvalidAmount
               ? null
               : () async {
                   await generateInvoiceHandler();
@@ -193,7 +188,11 @@ class ReceiveTabInvoice extends StatelessWidget {
         ),
         const SizedBox(height: kSpacingUnit * 2),
         // Invoice
-        Text(bip21Uri),
+        Text(
+          bip21Uri,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 4,
+        ),
         const SizedBox(height: kSpacingUnit * 2),
         // Button Row
         Row(

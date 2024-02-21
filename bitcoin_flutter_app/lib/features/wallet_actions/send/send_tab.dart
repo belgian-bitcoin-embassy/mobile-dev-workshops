@@ -6,9 +6,9 @@ import 'package:bitcoin_flutter_app/widgets/wallets/wallet_selection_field.dart'
 import 'package:flutter/material.dart';
 
 class SendTab extends StatefulWidget {
-  const SendTab({required this.bitcoinWalletService, super.key});
+  const SendTab({required this.walletServices, super.key});
 
-  final WalletService bitcoinWalletService;
+  final List<WalletService> walletServices;
 
   @override
   SendTabState createState() => SendTabState();
@@ -25,7 +25,7 @@ class SendTabState extends State<SendTab> {
     _controller = SendController(
       getState: () => _state,
       updateState: (SendState state) => setState(() => _state = state),
-      bitcoinWalletService: widget.bitcoinWalletService,
+      walletServices: widget.walletServices,
     );
 
     _controller.fetchRecommendedFeeRates();
@@ -41,8 +41,9 @@ class SendTabState extends State<SendTab> {
       children: [
         const SizedBox(height: kSpacingUnit * 2),
         WalletSelectionField(
-          selectedWalletType: _state.walletType,
-          onWalletTypeChange: (_) {},
+          selectedWallet: _state.selectedWallet,
+          availableWallets: _state.availableWallets,
+          onWalletTypeChange: _controller.onWalletTypeChange,
         ),
         // Amount Field
         SizedBox(

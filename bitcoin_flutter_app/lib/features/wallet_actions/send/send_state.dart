@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 @immutable
 class SendState extends Equatable {
   const SendState({
-    this.walletType = WalletType.onChain,
+    this.selectedWallet,
+    this.availableWallets = const [],
     this.amountSat,
     this.invoice,
     this.satPerVbyte,
@@ -15,7 +16,8 @@ class SendState extends Equatable {
     this.txId,
   });
 
-  final WalletType walletType;
+  final WalletType? selectedWallet;
+  final List<WalletType> availableWallets;
   final int? amountSat;
   final String? invoice;
   final double? satPerVbyte;
@@ -33,7 +35,8 @@ class SendState extends Equatable {
   }
 
   SendState copyWith({
-    WalletType? walletType,
+    WalletType? selectedWallet,
+    List<WalletType>? availableWallets,
     int? amountSat,
     String? invoice,
     double? satPerVbyte,
@@ -44,7 +47,8 @@ class SendState extends Equatable {
     String? txId,
   }) {
     return SendState(
-      walletType: walletType ?? this.walletType,
+      selectedWallet: selectedWallet ?? this.selectedWallet,
+      availableWallets: availableWallets ?? this.availableWallets,
       amountSat: amountSat ?? this.amountSat,
       invoice: invoice ?? this.invoice,
       satPerVbyte: satPerVbyte ?? this.satPerVbyte,
@@ -65,7 +69,8 @@ class SendState extends Equatable {
 
   @override
   List<Object?> get props => [
-        walletType,
+        selectedWallet,
+        availableWallets,
         amountSat,
         invoice,
         satPerVbyte,
