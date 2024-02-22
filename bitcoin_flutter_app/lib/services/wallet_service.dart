@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:bdk_flutter/bdk_flutter.dart';
@@ -5,6 +6,7 @@ import 'package:bitcoin_flutter_app/entities/recommended_fee_rates_entity.dart';
 import 'package:bitcoin_flutter_app/entities/transaction_entity.dart';
 import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
 import 'package:bitcoin_flutter_app/repositories/mnemonic_repository.dart';
+import 'package:flutter/foundation.dart';
 import 'package:ldk_node/ldk_node.dart' as ldk_node;
 import 'package:path_provider/path_provider.dart';
 
@@ -230,6 +232,12 @@ class LightningWalletService implements WalletService {
   final WalletType _walletType = WalletType.lightning;
   final MnemonicRepository _mnemonicRepository;
   ldk_node.Node? _node;
+  bool _stopEventStreaming = false;
+  late Future<void> _hasStreamingCompleted;
+
+  final _eventController = StreamController<ldk_node.Event>.broadcast();
+
+  Stream<ldk_node.Event> get events => _eventController.stream;
 
   LightningWalletService({
     required MnemonicRepository mnemonicRepository,
@@ -241,6 +249,32 @@ class LightningWalletService implements WalletService {
     if (mnemonic != null && mnemonic.isNotEmpty) {
       _node = await _buildNode(ldk_node.Mnemonic(mnemonic));
       await _node!.start();
+      await _node!.syncWallets();
+      // Start streaming events from the node
+      _hasStreamingCompleted = _startEventStreaming();
+
+      // Open a channel
+      /*await _node!.connectOpenChannel(
+        netaddress:
+            const ldk_node.SocketAddress.hostname(addr: '10.0.2.2', port: 9735),
+        nodeId: const ldk_node.PublicKey(
+          hexCode:
+              '027860e3b909b36664fc1daf712d78ef766f6cdbb13fd7e4c75d27a0e98fb735fe',
+        ),
+        channelAmountSats: 500000,
+        announceChannel: true,
+      );
+
+      await _node!.connectOpenChannel(
+        netaddress:
+            const ldk_node.SocketAddress.hostname(addr: '10.0.2.2', port: 9836),
+        nodeId: const ldk_node.PublicKey(
+          hexCode:
+              '03256ee63dd615c492391a923fa786a40ce18f6a8c274f01a60f86426a14ea2648',
+        ),
+        channelAmountSats: 1000000,
+        announceChannel: true,
+      );*/
     }
   }
 
@@ -268,6 +302,10 @@ class LightningWalletService implements WalletService {
     _node = await _buildNode(mnemonic);
     await _node!.start();
     await _node!.syncWallets();
+    // Reset the event streaming flag before starting the event streaming
+    _stopEventStreaming = false;
+    // Start streaming events from the node
+    _hasStreamingCompleted = _startEventStreaming();
     print(
       'Lightning Node added with node id: ${(await _node!.nodeId()).hexCode}',
     );
@@ -279,10 +317,8 @@ class LightningWalletService implements WalletService {
   @override
   Future<void> deleteWallet() async {
     if (_node != null) {
-      await _node!.stop();
-      await _clearCache();
       await _mnemonicRepository.deleteMnemonic(_walletType.label);
-      _node = null;
+      await _gracefulShutdown();
     }
   }
 
@@ -345,6 +381,15 @@ class LightningWalletService implements WalletService {
     throw UnimplementedError();
   }
 
+  Future<int> getOnChainBalance() async {
+    if (_node == null) {
+      throw NoWalletException('A Lightning node has to be initialized first!');
+    }
+
+    final balance = await _node!.totalOnchainBalanceSats();
+    return balance;
+  }
+
   Future<ldk_node.Node> _buildNode(ldk_node.Mnemonic mnemonic) async {
     final builder = ldk_node.Builder()
         .setStorageDirPath(await _nodePath)
@@ -377,6 +422,54 @@ class LightningWalletService implements WalletService {
     if (await directory.exists()) {
       await directory.delete(recursive: true);
     }
+  }
+
+  Future<void> _startEventStreaming() {
+    final Completer<void> completer = Completer<void>();
+
+    Future.microtask(() async {
+      while (true) {
+        try {
+          print('Waiting for next event...');
+          final e = await _node!.nextEvent().timeout(
+                const Duration(seconds: 5),
+                onTimeout: () => null,
+              );
+          if (e != null) {
+            print('Event: $e');
+            _eventController.add(e);
+            await _node!.eventHandled();
+          }
+          if (_stopEventStreaming) {
+            print('Stopping event streaming...');
+            completer.complete();
+            break;
+          }
+          // Wait for a bit before checking for the next event
+          await Future.delayed(const Duration(seconds: 10));
+        } catch (e) {
+          print('Error streaming events: $e');
+        }
+      }
+      print('Event streaming stopped...');
+    });
+
+    return completer.future;
+  }
+
+  Future<void> _gracefulShutdown() async {
+    print('Shutting down Lightning node...');
+    _stopEventStreaming = true;
+    print('Signalled to stop event stream...');
+    await _hasStreamingCompleted;
+    await _eventController.close();
+    await _node!.stop();
+    print('Node stopped...');
+    await _clearCache();
+    print('Cache cleared...');
+    _node = null;
+
+    print('Graceful shutdown complete!');
   }
 }
 
