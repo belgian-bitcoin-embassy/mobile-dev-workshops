@@ -232,26 +232,26 @@ class LightningWalletService implements WalletService {
   final WalletType _walletType = WalletType.lightning;
   final MnemonicRepository _mnemonicRepository;
   ldk_node.Node? _node;
-  bool _stopEventStreaming = false;
+  late StreamController<ldk_node.Event> _eventController;
+  late bool _stopEventStreamingFlag;
   late Future<void> _hasStreamingCompleted;
-
-  final _eventController = StreamController<ldk_node.Event>.broadcast();
-
-  Stream<ldk_node.Event> get events => _eventController.stream;
 
   LightningWalletService({
     required MnemonicRepository mnemonicRepository,
   }) : _mnemonicRepository = mnemonicRepository;
 
   @override
+  WalletType get walletType => _walletType;
+
+  @override
   Future<void> init() async {
     final mnemonic = await _mnemonicRepository.getMnemonic(_walletType.label);
     if (mnemonic != null && mnemonic.isNotEmpty) {
-      _node = await _buildNode(ldk_node.Mnemonic(mnemonic));
-      await _node!.start();
-      await _node!.syncWallets();
-      // Start streaming events from the node
-      _hasStreamingCompleted = _startEventStreaming();
+      await _initialize(ldk_node.Mnemonic(mnemonic));
+
+      print(
+        'Lightning node initialized with id: ${(await _node!.nodeId()).hexCode}',
+      );
 
       // Open a channel
       /*await _node!.connectOpenChannel(
@@ -279,9 +279,6 @@ class LightningWalletService implements WalletService {
   }
 
   @override
-  WalletType get walletType => _walletType;
-
-  @override
   Future<void> addWallet() async {
     ldk_node.Mnemonic mnemonic;
 
@@ -299,13 +296,7 @@ class LightningWalletService implements WalletService {
       mnemonic = ldk_node.Mnemonic(storedMnemonic);
     }
 
-    _node = await _buildNode(mnemonic);
-    await _node!.start();
-    await _node!.syncWallets();
-    // Reset the event streaming flag before starting the event streaming
-    _stopEventStreaming = false;
-    // Start streaming events from the node
-    _hasStreamingCompleted = _startEventStreaming();
+    await _initialize(mnemonic);
     print(
       'Lightning Node added with node id: ${(await _node!.nodeId()).hexCode}',
     );
@@ -390,6 +381,8 @@ class LightningWalletService implements WalletService {
     return balance;
   }
 
+  Stream<ldk_node.Event> get events => _eventController.stream;
+
   Future<ldk_node.Node> _buildNode(ldk_node.Mnemonic mnemonic) async {
     final builder = ldk_node.Builder()
         .setStorageDirPath(await _nodePath)
@@ -412,6 +405,14 @@ class LightningWalletService implements WalletService {
     return builder.build();
   }
 
+  Future<void> _initialize(ldk_node.Mnemonic mnemonic) async {
+    _node = await _buildNode(mnemonic);
+    await _node!.start();
+    await _node!.syncWallets();
+    // Start streaming events from the node
+    _hasStreamingCompleted = _startEventStreaming();
+  }
+
   Future<String> get _nodePath async {
     final directory = await getApplicationDocumentsDirectory();
     return "${directory.path}/ldk_cache/";
@@ -425,51 +426,52 @@ class LightningWalletService implements WalletService {
   }
 
   Future<void> _startEventStreaming() {
+    // Use a completer which will complete when the event streaming is stopped
     final Completer<void> completer = Completer<void>();
+    // Reset the event streaming flag before starting the event streaming
+    _stopEventStreamingFlag = false;
+    // Create a new stream controller
+    _eventController = StreamController<ldk_node.Event>.broadcast();
 
     Future.microtask(() async {
       while (true) {
         try {
-          print('Waiting for next event...');
           final e = await _node!.nextEvent().timeout(
                 const Duration(seconds: 5),
                 onTimeout: () => null,
               );
           if (e != null) {
-            print('Event: $e');
+            // Add the event to the stream
             _eventController.add(e);
             await _node!.eventHandled();
           }
-          if (_stopEventStreaming) {
-            print('Stopping event streaming...');
+          if (_stopEventStreamingFlag) {
             completer.complete();
             break;
           }
-          // Wait for a bit before checking for the next event
-          await Future.delayed(const Duration(seconds: 10));
+          // Wait a bit before checking for the next event
+          await Future.delayed(const Duration(seconds: 5));
         } catch (e) {
           print('Error streaming events: $e');
         }
       }
-      print('Event streaming stopped...');
     });
 
     return completer.future;
   }
 
   Future<void> _gracefulShutdown() async {
-    print('Shutting down Lightning node...');
-    _stopEventStreaming = true;
-    print('Signalled to stop event stream...');
+    // Stop streaming events before shutting down the node
+    await _stopEventStreaming();
+    await _node!.stop();
+    await _clearCache();
+    _node = null;
+  }
+
+  Future<void> _stopEventStreaming() async {
+    _stopEventStreamingFlag = true;
     await _hasStreamingCompleted;
     await _eventController.close();
-    await _node!.stop();
-    print('Node stopped...');
-    await _clearCache();
-    print('Cache cleared...');
-    _node = null;
-
-    print('Graceful shutdown complete!');
   }
 }
 
