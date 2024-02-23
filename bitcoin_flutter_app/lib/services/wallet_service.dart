@@ -6,16 +6,16 @@ import 'package:bitcoin_flutter_app/entities/recommended_fee_rates_entity.dart';
 import 'package:bitcoin_flutter_app/entities/transaction_entity.dart';
 import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
 import 'package:bitcoin_flutter_app/repositories/mnemonic_repository.dart';
-import 'package:flutter/foundation.dart';
 import 'package:ldk_node/ldk_node.dart' as ldk_node;
 import 'package:path_provider/path_provider.dart';
 
 abstract class WalletService {
-  Future<void> init();
   WalletType get walletType;
+  Future<void> init();
   Future<void> addWallet();
   bool get hasWallet;
   Future<void> deleteWallet();
+  Future<void> sync();
   Future<int> getSpendableBalanceSat();
   Future<(String? bitcoinInvoice, String? lightningInvoice)> generateInvoices({
     int? amountSat,
@@ -42,6 +42,9 @@ class BitcoinWalletService implements WalletService {
   }) : _mnemonicRepository = mnemonicRepository;
 
   @override
+  WalletType get walletType => _walletType;
+
+  @override
   Future<void> init() async {
     print('Initializing BitcoinWalletService...');
     await _initBlockchain();
@@ -56,9 +59,6 @@ class BitcoinWalletService implements WalletService {
       print('No wallet found!');
     }
   }
-
-  @override
-  WalletType get walletType => _walletType;
 
   @override
   Future<void> addWallet() async {
@@ -87,6 +87,11 @@ class BitcoinWalletService implements WalletService {
   Future<void> deleteWallet() async {
     await _mnemonicRepository.deleteMnemonic(_walletType.label);
     _wallet = null;
+  }
+
+  @override
+  Future<void> sync() async {
+    await _wallet!.sync(_blockchain);
   }
 
   @override
@@ -179,10 +184,6 @@ class BitcoinWalletService implements WalletService {
       lowPriority: lowPriority.asSatPerVb(),
       noPriority: noPriority.asSatPerVb(),
     );
-  }
-
-  Future<void> sync() async {
-    await _wallet!.sync(_blockchain);
   }
 
   Future<void> _initBlockchain() async {
@@ -311,6 +312,11 @@ class LightningWalletService implements WalletService {
       await _mnemonicRepository.deleteMnemonic(_walletType.label);
       await _gracefulShutdown();
     }
+  }
+
+  @override
+  Future<void> sync() async {
+    await _node!.syncWallets();
   }
 
   @override

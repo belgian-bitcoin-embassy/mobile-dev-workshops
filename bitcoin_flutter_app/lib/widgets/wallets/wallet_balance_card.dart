@@ -1,4 +1,3 @@
-import 'package:bdk_flutter/bdk_flutter.dart';
 import 'package:bitcoin_flutter_app/constants.dart';
 import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
 import 'package:bitcoin_flutter_app/view_models/wallet_balance_view_model.dart';
@@ -6,12 +5,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
 class WalletBalanceCard extends StatelessWidget {
-  const WalletBalanceCard(this.walletBalance,
-      {required this.onDelete, Key? key})
-      : super(key: key);
+  const WalletBalanceCard(
+    this.walletBalance, {
+    super.key,
+    required this.onDelete,
+    required this.onTap,
+  });
 
   final WalletBalanceViewModel walletBalance;
-  final Function(WalletType) onDelete;
+  final VoidCallback onDelete;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -24,10 +27,7 @@ class WalletBalanceCard extends StatelessWidget {
       clipBehavior: Clip.hardEdge,
       child: InkWell(
         borderRadius: BorderRadius.circular(kSpacingUnit),
-        onTap: () {
-          // Todo: Navigate to wallet
-          print('Go to wallet');
-        },
+        onTap: onTap,
         child: Stack(
           children: [
             Column(
@@ -73,7 +73,7 @@ class WalletBalanceCard extends StatelessWidget {
               top: 0,
               right: 0,
               child: CloseButton(
-                onPressed: () => onDelete(walletBalance.walletType),
+                onPressed: onDelete,
                 style: ButtonStyle(
                   padding: MaterialStateProperty.all(
                     EdgeInsets.zero,

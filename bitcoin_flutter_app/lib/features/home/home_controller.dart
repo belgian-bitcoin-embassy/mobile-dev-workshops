@@ -63,22 +63,19 @@ class HomeController {
     }
   }
 
-  Future<void> deleteWallet(WalletType walletType) async {
+  Future<void> deleteWallet(int index) async {
     try {
-      final walletIndex = _walletServices.indexWhere(
-        (service) => service.walletType == walletType,
-      );
-      await _walletServices[walletIndex].deleteWallet();
+      await _walletServices[index].deleteWallet();
       final state = _getState();
       _updateState(
         state.copyWith(
           walletBalances: state.walletBalances
-            ..[walletIndex] = WalletBalanceViewModel(
-              walletType: state.walletBalances[walletIndex].walletType,
+            ..[index] = WalletBalanceViewModel(
+              walletType: state.walletBalances[index].walletType,
               balanceSat: null,
             ),
-          transactionLists: state.transactionLists..[walletIndex] = null,
-          transactionListIndex: walletIndex - 1 < 0 ? 0 : walletIndex - 1,
+          transactionLists: state.transactionLists..[index] = null,
+          transactionListIndex: index - 1 < 0 ? 0 : index - 1,
         ),
       );
     } catch (e) {
@@ -92,6 +89,7 @@ class HomeController {
       for (int i = 0; i < _walletServices.length; i++) {
         final walletService = _walletServices[i];
         if (walletService.hasWallet) {
+          await walletService.sync();
           final balance = await walletService.getSpendableBalanceSat();
           _updateState(
             state.copyWith(
@@ -112,8 +110,13 @@ class HomeController {
     }
   }
 
+  void selectWallet(int index) {
+    _updateState(_getState().copyWith(transactionListIndex: index));
+  }
+
   Future<List<TransactionsListItemViewModel>> _getTransactions(
-      WalletService wallet) async {
+    WalletService wallet,
+  ) async {
     // Get transaction entities from the wallet
     final transactionEntities = await wallet.getTransactions();
     // Map transaction entities to view models

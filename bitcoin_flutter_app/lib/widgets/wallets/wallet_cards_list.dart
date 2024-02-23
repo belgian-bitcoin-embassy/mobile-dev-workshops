@@ -10,12 +10,14 @@ class WalletCardsList extends StatelessWidget {
     this.walletBalances, {
     required this.onAddNewWallet,
     required this.onDeleteWallet,
+    required this.onSelectWallet,
     super.key,
   });
 
   final List<WalletBalanceViewModel> walletBalances;
   final Function(WalletType) onAddNewWallet;
-  final Function(WalletType) onDeleteWallet;
+  final Function(int index) onDeleteWallet;
+  final Function(int index) onSelectWallet;
 
   @override
   Widget build(context) {
@@ -32,7 +34,8 @@ class WalletCardsList extends StatelessWidget {
         } else {
           return WalletBalanceCard(
             walletBalances[index],
-            onDelete: onDeleteWallet,
+            onDelete: () => onDeleteWallet(index),
+            onTap: () => onSelectWallet(index),
           );
         }
       },

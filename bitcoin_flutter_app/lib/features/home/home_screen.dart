@@ -53,6 +53,7 @@ class HomeScreenState extends State<HomeScreen> {
                 _state.walletBalances,
                 onAddNewWallet: _controller.addNewWallet,
                 onDeleteWallet: _controller.deleteWallet,
+                onSelectWallet: _controller.selectWallet,
               ),
             ),
             TransactionsList(
