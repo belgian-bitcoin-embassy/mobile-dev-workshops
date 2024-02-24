@@ -2,6 +2,7 @@ import 'package:bitcoin_flutter_app/constants.dart';
 import 'package:bitcoin_flutter_app/features/home/home_controller.dart';
 import 'package:bitcoin_flutter_app/features/home/home_state.dart';
 import 'package:bitcoin_flutter_app/services/wallet_service.dart';
+import 'package:bitcoin_flutter_app/widgets/reserved_amounts/reserved_amounts_list.dart';
 import 'package:bitcoin_flutter_app/widgets/transactions/transactions_list.dart';
 import 'package:bitcoin_flutter_app/widgets/wallets/wallet_cards_list.dart';
 import 'package:bitcoin_flutter_app/features/wallet_actions/wallet_actions_bottom_sheet.dart';
@@ -54,12 +55,20 @@ class HomeScreenState extends State<HomeScreen> {
                 onAddNewWallet: _controller.addNewWallet,
                 onDeleteWallet: _controller.deleteWallet,
                 onSelectWallet: _controller.selectWallet,
+                selectedWalletIndex: _state.walletIndex,
               ),
+            ),
+            ReservedAmountsList(
+              reservedAmounts: _state.reservedAmountsLists.isNotEmpty
+                  ? _state.reservedAmountsLists[_state.walletIndex]
+                  : null,
+              walletType: _state.selectedWalletType,
             ),
             TransactionsList(
               transactions: _state.transactionLists.isNotEmpty
-                  ? _state.transactionLists[_state.transactionListIndex]
+                  ? _state.transactionLists[_state.walletIndex]
                   : null,
+              walletType: _state.selectedWalletType,
             ),
           ],
         ),

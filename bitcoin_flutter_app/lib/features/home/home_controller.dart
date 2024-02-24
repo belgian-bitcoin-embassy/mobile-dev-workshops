@@ -1,6 +1,7 @@
 import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
 import 'package:bitcoin_flutter_app/features/home/home_state.dart';
 import 'package:bitcoin_flutter_app/services/wallet_service.dart';
+import 'package:bitcoin_flutter_app/view_models/reserved_amounts_list_item_view_model.dart';
 import 'package:bitcoin_flutter_app/view_models/transactions_list_item_view_model.dart';
 import 'package:bitcoin_flutter_app/view_models/wallet_balance_view_model.dart';
 
@@ -20,6 +21,7 @@ class HomeController {
   Future<void> init() async {
     final walletBalances = <WalletBalanceViewModel>[];
     final transactionLists = <List<TransactionsListItemViewModel>?>[];
+    final reservedAmountsLists = <List<ReservedAmountsListItemViewModel>?>[];
     for (int i = 0; i < _walletServices.length; i++) {
       final service = _walletServices[i];
       walletBalances.add(
@@ -32,11 +34,15 @@ class HomeController {
       transactionLists.add(
         service.hasWallet ? await _getTransactions(service) : null,
       );
+      reservedAmountsLists.add(
+        service.hasWallet ? await _getReservedAmounts(service) : null,
+      );
     }
 
     _updateState(_getState().copyWith(
       walletBalances: walletBalances,
       transactionLists: transactionLists,
+      reservedAmountsLists: reservedAmountsLists,
     ));
   }
 
@@ -55,7 +61,7 @@ class HomeController {
               walletType: walletService.walletType,
               balanceSat: await walletService.getSpendableBalanceSat(),
             ),
-          transactionListIndex: walletIndex,
+          walletIndex: walletIndex,
         ),
       );
     } catch (e) {
@@ -75,7 +81,8 @@ class HomeController {
               balanceSat: null,
             ),
           transactionLists: state.transactionLists..[index] = null,
-          transactionListIndex: index - 1 < 0 ? 0 : index - 1,
+          reservedAmountsLists: state.reservedAmountsLists..[index] = null,
+          walletIndex: index - 1 < 0 ? 0 : index - 1,
         ),
       );
     } catch (e) {
@@ -100,6 +107,8 @@ class HomeController {
                 ),
               transactionLists: state.transactionLists
                 ..[i] = await _getTransactions(walletService),
+              reservedAmountsLists: state.reservedAmountsLists
+                ..[i] = await _getReservedAmounts(walletService),
             ),
           );
         }
@@ -111,7 +120,7 @@ class HomeController {
   }
 
   void selectWallet(int index) {
-    _updateState(_getState().copyWith(transactionListIndex: index));
+    _updateState(_getState().copyWith(walletIndex: index));
   }
 
   Future<List<TransactionsListItemViewModel>> _getTransactions(
@@ -138,5 +147,35 @@ class HomeController {
       return t2.timestamp!.compareTo(t1.timestamp!);
     });
     return transactions;
+  }
+
+  Future<List<ReservedAmountsListItemViewModel>> _getReservedAmounts(
+    WalletService wallet,
+  ) async {
+    if (wallet is LightningWalletService) {
+      final List<ReservedAmountsListItemViewModel> reservedAmounts = [];
+      final spendableOnChainBalanceSat =
+          await wallet.spendableOnChainBalanceSat;
+      final totalOnChainBalanceSat = await wallet.totalOnChainBalanceSat;
+
+      if (spendableOnChainBalanceSat > 0) {
+        reservedAmounts.add(
+          ReservedAmountsListItemViewModel(
+            amountSat: spendableOnChainBalanceSat,
+            isActionRequired: true,
+          ),
+        );
+      }
+      if (totalOnChainBalanceSat > spendableOnChainBalanceSat) {
+        reservedAmounts.add(
+          ReservedAmountsListItemViewModel(
+            amountSat: totalOnChainBalanceSat - spendableOnChainBalanceSat,
+            isActionRequired: false,
+          ),
+        );
+      }
+      return reservedAmounts;
+    }
+    return [];
   }
 }

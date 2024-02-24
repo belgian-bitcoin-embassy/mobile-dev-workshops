@@ -10,11 +10,13 @@ class WalletBalanceCard extends StatelessWidget {
     super.key,
     required this.onDelete,
     required this.onTap,
+    required this.isSelected,
   });
 
   final WalletBalanceViewModel walletBalance;
   final VoidCallback onDelete;
   final VoidCallback onTap;
+  final bool isSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +65,13 @@ class WalletBalanceCard extends StatelessWidget {
                               : '${walletBalance.balanceSat} sats',
                           style: theme.textTheme.bodyMedium,
                         ),
+                        const Spacer(),
+                        if (isSelected)
+                          Container(
+                            height: kSpacingUnit / 2,
+                            width: double.infinity,
+                            color: theme.colorScheme.onBackground,
+                          ),
                       ],
                     ),
                   ),

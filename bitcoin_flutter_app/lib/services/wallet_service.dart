@@ -255,7 +255,7 @@ class LightningWalletService implements WalletService {
       );
 
       // Open a channel
-      /*await _node!.connectOpenChannel(
+      await _node!.connectOpenChannel(
         netaddress:
             const ldk_node.SocketAddress.hostname(addr: '10.0.2.2', port: 9735),
         nodeId: const ldk_node.PublicKey(
@@ -275,7 +275,7 @@ class LightningWalletService implements WalletService {
         ),
         channelAmountSats: 1000000,
         announceChannel: true,
-      );*/
+      );
     }
   }
 
@@ -368,24 +368,63 @@ class LightningWalletService implements WalletService {
 
   @override
   Future<List<TransactionEntity>> getTransactions() async {
-    return [];
-  }
-
-  @override
-  Future<String> pay(String invoice,
-      {int? amountSat, double? satPerVbyte, int? absoluteFeeSat}) {
-    // TODO: implement pay
-    throw UnimplementedError();
-  }
-
-  Future<int> getOnChainBalance() async {
     if (_node == null) {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    final balance = await _node!.totalOnchainBalanceSats();
-    return balance;
+    final payments = await _node!.listPayments();
+
+    return payments
+        .where((payment) => payment.status == ldk_node.PaymentStatus.Succeeded)
+        .map((payment) {
+      return TransactionEntity(
+        id: _convertU8Array32ToHex(payment.hash.data),
+        receivedAmountSat:
+            payment.direction == ldk_node.PaymentDirection.Inbound &&
+                    payment.amountMsat != null
+                ? payment.amountMsat! ~/ 1000
+                : 0,
+        sentAmountSat:
+            payment.direction == ldk_node.PaymentDirection.Outbound &&
+                    payment.amountMsat != null
+                ? payment.amountMsat! ~/ 1000
+                : 0,
+        timestamp: null,
+      );
+    }).toList();
   }
+
+  @override
+  Future<String> pay(
+    String invoice, {
+    int? amountSat,
+    double? satPerVbyte,
+    int? absoluteFeeSat,
+  }) async {
+    if (_node == null) {
+      throw NoWalletException('A Lightning node has to be initialized first!');
+    }
+
+    final hash = amountSat == null
+        ? await _node!.sendPayment(
+            invoice: ldk_node.Bolt11Invoice(
+              signedRawInvoice: invoice,
+            ),
+          )
+        : await _node!.sendPaymentUsingAmount(
+            invoice: ldk_node.Bolt11Invoice(
+              signedRawInvoice: invoice,
+            ),
+            amountMsat: amountSat * 1000,
+          );
+    print('Payment hash: ${_convertU8Array32ToHex(hash.data)}');
+    return _convertU8Array32ToHex(hash.data);
+  }
+
+  Future<int> get totalOnChainBalanceSat => _node!.totalOnchainBalanceSats();
+
+  Future<int> get spendableOnChainBalanceSat =>
+      _node!.spendableOnchainBalanceSats();
 
   Stream<ldk_node.Event> get events => _eventController.stream;
 
@@ -478,6 +517,12 @@ class LightningWalletService implements WalletService {
     _stopEventStreamingFlag = true;
     await _hasStreamingCompleted;
     await _eventController.close();
+  }
+
+  String _convertU8Array32ToHex(List<int> u8Array32) {
+    return u8Array32
+        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
+        .join();
   }
 }
 

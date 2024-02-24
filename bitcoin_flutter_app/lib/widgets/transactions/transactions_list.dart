@@ -1,11 +1,17 @@
+import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
 import 'package:bitcoin_flutter_app/view_models/transactions_list_item_view_model.dart';
 import 'package:bitcoin_flutter_app/widgets/transactions/transactions_list_item.dart';
 import 'package:flutter/material.dart';
 
 class TransactionsList extends StatelessWidget {
-  const TransactionsList({super.key, required this.transactions});
+  const TransactionsList({
+    super.key,
+    required this.transactions,
+    required this.walletType,
+  });
 
   final List<TransactionsListItemViewModel>? transactions;
+  final WalletType walletType;
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +35,7 @@ class TransactionsList extends StatelessWidget {
           itemBuilder: (ctx, index) {
             return TransactionsListItem(
               transaction: transactions![index],
+              walletType: walletType,
             );
           },
           itemCount: transactions == null ? 0 : transactions!.length,

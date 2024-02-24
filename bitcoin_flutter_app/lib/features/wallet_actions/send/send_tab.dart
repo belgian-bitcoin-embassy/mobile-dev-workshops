@@ -1,4 +1,5 @@
 import 'package:bitcoin_flutter_app/constants.dart';
+import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
 import 'package:bitcoin_flutter_app/features/wallet_actions/send/send_controller.dart';
 import 'package:bitcoin_flutter_app/features/wallet_actions/send/send_state.dart';
 import 'package:bitcoin_flutter_app/services/wallet_service.dart';
@@ -45,14 +46,17 @@ class SendTabState extends State<SendTab> {
           availableWallets: _state.availableWallets,
           onWalletTypeChange: _controller.onWalletTypeChange,
         ),
+        const SizedBox(height: kSpacingUnit * 2),
         // Amount Field
         SizedBox(
           width: 250,
           child: TextField(
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
-              labelText: 'Amount',
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              labelText: _state.selectedWallet == WalletType.lightning
+                  ? 'Amount (optional)'
+                  : 'Amount',
               hintText: '0',
               helperText: 'The amount you want to send in BTC.',
             ),
@@ -73,42 +77,43 @@ class SendTabState extends State<SendTab> {
             onChanged: _controller.invoiceChangeHandler,
           ),
         ),
-        const SizedBox(height: kSpacingUnit * 2),
         // Fee rate slider
-        _state.recommendedFeeRates == null
-            ? const CircularProgressIndicator()
-            : SizedBox(
-                width: 250,
-                child: Column(
-                  children: [
-                    Slider(
-                      value: _state.satPerVbyte ?? 0,
-                      onChanged: _controller.feeRateChangeHandler,
-                      divisions: _state.recommendedFeeRates!.length - 1 > 0
-                          ? _state.recommendedFeeRates!.length - 1
-                          : 1,
-                      min: _state.recommendedFeeRates!.last,
-                      max: _state.recommendedFeeRates!.first,
-                      label: _state.satPerVbyte! <=
-                              _state.recommendedFeeRates!.last
-                          ? 'low priority'
-                          : _state.satPerVbyte! >=
-                                  _state.recommendedFeeRates!.first
-                              ? 'high priority'
-                              : 'medium priority',
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: kSpacingUnit * 1.5,
+        if (_state.selectedWallet == WalletType.onChain)
+          _state.recommendedFeeRates == null
+              ? const CircularProgressIndicator()
+              : SizedBox(
+                  width: 250,
+                  child: Column(
+                    children: [
+                      const SizedBox(height: kSpacingUnit * 2),
+                      Slider(
+                        value: _state.satPerVbyte ?? 0,
+                        onChanged: _controller.feeRateChangeHandler,
+                        divisions: _state.recommendedFeeRates!.length - 1 > 0
+                            ? _state.recommendedFeeRates!.length - 1
+                            : 1,
+                        min: _state.recommendedFeeRates!.last,
+                        max: _state.recommendedFeeRates!.first,
+                        label: _state.satPerVbyte! <=
+                                _state.recommendedFeeRates!.last
+                            ? 'low priority'
+                            : _state.satPerVbyte! >=
+                                    _state.recommendedFeeRates!.first
+                                ? 'high priority'
+                                : 'medium priority',
                       ),
-                      child: Text(
-                        'The fee rate to pay for this transaction: ${_state.satPerVbyte ?? 0} sat/vB.',
-                        style: theme.textTheme.bodySmall,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: kSpacingUnit * 1.5,
+                        ),
+                        child: Text(
+                          'The fee rate to pay for this transaction: ${_state.satPerVbyte ?? 0} sat/vB.',
+                          style: theme.textTheme.bodySmall,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
         const SizedBox(height: kSpacingUnit * 2),
         // Error message
         SizedBox(
@@ -129,8 +134,8 @@ class SendTabState extends State<SendTab> {
         const SizedBox(height: kSpacingUnit * 2),
         // Send funds Button
         ElevatedButton.icon(
-          onPressed: _state.amountSat == null ||
-                  _state.amountSat == 0 ||
+          onPressed: _state.selectedWallet == WalletType.onChain &&
+                      (_state.amountSat == null || _state.amountSat == 0) ||
                   _state.invoice == null ||
                   _state.invoice!.isEmpty ||
                   _state.error is InvalidAmountException ||

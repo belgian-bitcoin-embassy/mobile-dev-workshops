@@ -1,4 +1,5 @@
 import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
+import 'package:bitcoin_flutter_app/features/wallet_actions/send/send_controller.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
@@ -38,6 +39,7 @@ class SendState extends Equatable {
     WalletType? selectedWallet,
     List<WalletType>? availableWallets,
     int? amountSat,
+    bool? clearAmountSat,
     String? invoice,
     double? satPerVbyte,
     bool? isMakingPayment,
@@ -49,7 +51,7 @@ class SendState extends Equatable {
     return SendState(
       selectedWallet: selectedWallet ?? this.selectedWallet,
       availableWallets: availableWallets ?? this.availableWallets,
-      amountSat: amountSat ?? this.amountSat,
+      amountSat: clearAmountSat == true ? null : amountSat ?? this.amountSat,
       invoice: invoice ?? this.invoice,
       satPerVbyte: satPerVbyte ?? this.satPerVbyte,
       isMakingPayment: isMakingPayment ?? this.isMakingPayment,

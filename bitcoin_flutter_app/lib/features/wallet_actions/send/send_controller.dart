@@ -33,7 +33,7 @@ class SendController {
     final state = _getState();
     try {
       if (amount == null || amount.isEmpty) {
-        _updateState(state.copyWith(amountSat: 0, clearError: true));
+        _updateState(state.copyWith(clearAmountSat: true, clearError: true));
       } else {
         final amountBtc = double.parse(amount);
         final int amountSat = (amountBtc * 100000000).round();
