@@ -1,4 +1,5 @@
 import 'package:bitcoin_flutter_app/constants.dart';
+import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
 import 'package:bitcoin_flutter_app/features/home/home_controller.dart';
 import 'package:bitcoin_flutter_app/features/home/home_state.dart';
 import 'package:bitcoin_flutter_app/services/wallet_service.dart';
@@ -62,7 +63,10 @@ class HomeScreenState extends State<HomeScreen> {
               reservedAmounts: _state.reservedAmountsLists.isNotEmpty
                   ? _state.reservedAmountsLists[_state.walletIndex]
                   : null,
-              walletType: _state.selectedWalletType,
+              walletService: widget.walletServices[_state.walletIndex],
+              savingsWalletService: widget.walletServices.firstWhere(
+                      (service) => service.walletType == WalletType.onChain)
+                  as BitcoinWalletService,
             ),
             TransactionsList(
               transactions: _state.transactionLists.isNotEmpty

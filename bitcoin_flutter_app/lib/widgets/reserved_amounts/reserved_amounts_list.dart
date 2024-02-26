@@ -1,4 +1,4 @@
-import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
+import 'package:bitcoin_flutter_app/services/wallet_service.dart';
 import 'package:bitcoin_flutter_app/view_models/reserved_amounts_list_item_view_model.dart';
 import 'package:bitcoin_flutter_app/widgets/reserved_amounts/reserved_amounts_list_item.dart';
 import 'package:flutter/material.dart';
@@ -7,11 +7,13 @@ class ReservedAmountsList extends StatelessWidget {
   const ReservedAmountsList({
     super.key,
     required this.reservedAmounts,
-    required this.walletType,
+    required this.walletService,
+    required this.savingsWalletService,
   });
 
   final List<ReservedAmountsListItemViewModel>? reservedAmounts;
-  final WalletType walletType;
+  final WalletService walletService;
+  final BitcoinWalletService savingsWalletService;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +39,8 @@ class ReservedAmountsList extends StatelessWidget {
                 itemBuilder: (ctx, index) {
                   return ReservedAmountsListItem(
                     reservedAmount: reservedAmounts![index],
-                    walletType: walletType,
+                    walletService: walletService,
+                    savingsWalletService: savingsWalletService,
                   );
                 },
                 itemCount:

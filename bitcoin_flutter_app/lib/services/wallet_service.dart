@@ -253,29 +253,6 @@ class LightningWalletService implements WalletService {
       print(
         'Lightning node initialized with id: ${(await _node!.nodeId()).hexCode}',
       );
-
-      // Open a channel
-      await _node!.connectOpenChannel(
-        netaddress:
-            const ldk_node.SocketAddress.hostname(addr: '10.0.2.2', port: 9735),
-        nodeId: const ldk_node.PublicKey(
-          hexCode:
-              '027860e3b909b36664fc1daf712d78ef766f6cdbb13fd7e4c75d27a0e98fb735fe',
-        ),
-        channelAmountSats: 500000,
-        announceChannel: true,
-      );
-
-      await _node!.connectOpenChannel(
-        netaddress:
-            const ldk_node.SocketAddress.hostname(addr: '10.0.2.2', port: 9836),
-        nodeId: const ldk_node.PublicKey(
-          hexCode:
-              '03256ee63dd615c492391a923fa786a40ce18f6a8c274f01a60f86426a14ea2648',
-        ),
-        channelAmountSats: 1000000,
-        announceChannel: true,
-      );
     }
   }
 
@@ -425,6 +402,49 @@ class LightningWalletService implements WalletService {
 
   Future<int> get spendableOnChainBalanceSat =>
       _node!.spendableOnchainBalanceSats();
+
+  Future<void> openChannel({
+    required String host,
+    required int port,
+    required String nodeId,
+    required int channelAmountSat,
+    bool announceChannel = true,
+  }) async {
+    if (_node == null) {
+      throw NoWalletException('A Lightning node has to be initialized first!');
+    }
+    print('Opening channel to $nodeId with $channelAmountSat sats...');
+    print('Host: $host, Port: $port');
+    return _node!.connectOpenChannel(
+      netaddress: ldk_node.SocketAddress.hostname(addr: host, port: port),
+      nodeId: ldk_node.PublicKey(
+        hexCode: nodeId,
+      ),
+      channelAmountSats: channelAmountSat,
+      announceChannel: true,
+    );
+  }
+
+  Future<String> drainOnChainFunds(String address) async {
+    if (_node == null) {
+      throw NoWalletException('A Lightning node has to be initialized first!');
+    }
+
+    final tx = await _node!
+        .sendAllToOnchainAddress(address: ldk_node.Address(s: address));
+    return tx.hash;
+  }
+
+  Future<String> sendOnChainFunds(String address, int amountSat) async {
+    if (_node == null) {
+      throw NoWalletException('A Lightning node has to be initialized first!');
+    }
+    final tx = await _node!.sendToOnchainAddress(
+      address: ldk_node.Address(s: address),
+      amountSats: amountSat,
+    );
+    return tx.hash;
+  }
 
   Stream<ldk_node.Event> get events => _eventController.stream;
 
