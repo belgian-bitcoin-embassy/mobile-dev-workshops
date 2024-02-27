@@ -8,12 +8,10 @@ class ReservedAmountsList extends StatelessWidget {
     super.key,
     required this.reservedAmounts,
     required this.walletService,
-    required this.savingsWalletService,
   });
 
   final List<ReservedAmountsListItemViewModel>? reservedAmounts;
   final WalletService walletService;
-  final BitcoinWalletService savingsWalletService;
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +38,6 @@ class ReservedAmountsList extends StatelessWidget {
                   return ReservedAmountsListItem(
                     reservedAmount: reservedAmounts![index],
                     walletService: walletService,
-                    savingsWalletService: savingsWalletService,
                   );
                 },
                 itemCount:

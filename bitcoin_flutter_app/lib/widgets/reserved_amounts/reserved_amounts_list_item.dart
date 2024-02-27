@@ -8,13 +8,10 @@ class ReservedAmountsListItem extends StatelessWidget {
     super.key,
     required this.reservedAmount,
     required this.walletService,
-    required this.savingsWalletService,
   });
 
   final ReservedAmountsListItemViewModel reservedAmount;
   final WalletService walletService;
-  final BitcoinWalletService savingsWalletService;
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -46,7 +43,6 @@ class ReservedAmountsListItem extends StatelessWidget {
                     if (walletService is LightningWalletService) {
                       return ReservedAmountActionsBottomSheet(
                         walletService: walletService as LightningWalletService,
-                        savingsWalletService: savingsWalletService,
                       );
                     }
                     return const Text('Not implemented yet');

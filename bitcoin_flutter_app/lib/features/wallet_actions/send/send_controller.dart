@@ -62,36 +62,6 @@ class SendController {
     }
   }
 
-  Future<void> fetchRecommendedFeeRates() async {
-    final state = _getState();
-    try {
-      if (_selectedWalletService is BitcoinWalletService) {
-        final fetchedRates =
-            await (_selectedWalletService as BitcoinWalletService)
-                .calculateFeeRates();
-
-        final recommendedFeeRates = {
-          fetchedRates.highPriority,
-          fetchedRates.mediumPriority,
-          fetchedRates.lowPriority,
-          fetchedRates.noPriority
-        }.toList();
-
-        _updateState(
-          state.copyWith(
-            recommendedFeeRates: recommendedFeeRates,
-            satPerVbyte: fetchedRates.mediumPriority,
-          ),
-        );
-      }
-    } catch (e) {
-      print(e);
-      _updateState(state.copyWith(
-        error: FeeRecommendationNotAvailableException(),
-      ));
-    }
-  }
-
   void feeRateChangeHandler(double feeRate) {
     _updateState(_getState().copyWith(satPerVbyte: feeRate));
   }

@@ -38,7 +38,7 @@ dependencies:
   flutter_secure_storage: ^9.0.0
   equatable: ^2.0.5
   qr_flutter: ^4.1.0
-  bdk_flutter: ^0.30.0
+  #bdk_flutter: ^0.30.0
   ldk_node:
     git:
       url: https://github.com/LtbLightning/ldk-node-flutter

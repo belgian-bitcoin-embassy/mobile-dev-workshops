@@ -28,8 +28,6 @@ class SendTabState extends State<SendTab> {
       updateState: (SendState state) => setState(() => _state = state),
       walletServices: widget.walletServices,
     );
-
-    _controller.fetchRecommendedFeeRates();
   }
 
   @override

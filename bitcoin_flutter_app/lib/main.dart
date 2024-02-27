@@ -8,30 +8,30 @@ void main() async {
 
   // Instantiate the wallet services in the main so
   // we can have one service instance of every wallet for the entire app...
-  final bitcoinWalletService = BitcoinWalletService(
+  /*final bitcoinWalletService = BitcoinWalletService(
     mnemonicRepository: SecureStorageMnemonicRepository(),
-  );
+  );*/
   final lightningWalletService = LightningWalletService(
     mnemonicRepository: SecureStorageMnemonicRepository(),
   );
   // ...and have it initialized before the app starts.
-  await bitcoinWalletService.init();
+  //await bitcoinWalletService.init();
   await lightningWalletService.init();
 
   runApp(MyApp(
-    bitcoinWalletService: bitcoinWalletService,
+    //bitcoinWalletService: bitcoinWalletService,
     lightningWalletService: lightningWalletService,
   ));
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({
-    required this.bitcoinWalletService,
+    //required this.bitcoinWalletService,
     required this.lightningWalletService,
     super.key,
   });
 
-  final BitcoinWalletService bitcoinWalletService;
+  //final BitcoinWalletService bitcoinWalletService;
   final LightningWalletService lightningWalletService;
 
   // This widget is the root of your application.
@@ -59,7 +59,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       home: HomeScreen(
-        walletServices: [bitcoinWalletService, lightningWalletService],
+        walletServices: [lightningWalletService],
       ),
     );
   }

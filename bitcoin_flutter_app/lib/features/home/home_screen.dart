@@ -64,9 +64,6 @@ class HomeScreenState extends State<HomeScreen> {
                   ? _state.reservedAmountsLists[_state.walletIndex]
                   : null,
               walletService: widget.walletServices[_state.walletIndex],
-              savingsWalletService: widget.walletServices.firstWhere(
-                      (service) => service.walletType == WalletType.onChain)
-                  as BitcoinWalletService,
             ),
             TransactionsList(
               transactions: _state.transactionLists.isNotEmpty
