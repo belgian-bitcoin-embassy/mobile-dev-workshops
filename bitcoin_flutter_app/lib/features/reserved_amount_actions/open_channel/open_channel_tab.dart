@@ -5,7 +5,6 @@ import 'package:bitcoin_flutter_app/features/reserved_amount_actions/open_channe
 import 'package:bitcoin_flutter_app/features/reserved_amount_actions/open_channel/open_channel_state.dart';
 import 'package:bitcoin_flutter_app/services/wallet_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class OpenChannelTab extends StatefulWidget {
   const OpenChannelTab({required this.walletService, super.key});
@@ -21,7 +20,7 @@ class OpenChannelTabState extends State<OpenChannelTab> {
     host: Platform.isAndroid ? '10.0.2.2' : '127.0.0.1',
     port: 9735,
     nodeId:
-        '027860e3b909b36664fc1daf712d78ef766f6cdbb13fd7e4c75d27a0e98fb735fe',
+        '02f3c8550d707bb94844d3c1c02a0c12f3bd3748aaca1726ae1d4f553f6f190d07',
     announceChannel: true,
   );
   late OpenChannelController _controller;
