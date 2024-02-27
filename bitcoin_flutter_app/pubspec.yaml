@@ -41,8 +41,8 @@ dependencies:
   bdk_flutter: ^0.30.0
   ldk_node:
     git:
-      url: https://github.com/kumulynja/ldk-node-flutter
-      ref: upgrade-v0.2.1
+      url: https://github.com/LtbLightning/ldk-node-flutter
+      ref: main
   path_provider: ^2.1.2
 
 dev_dependencies:

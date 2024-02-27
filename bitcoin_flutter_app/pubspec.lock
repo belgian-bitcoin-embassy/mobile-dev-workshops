@@ -356,9 +356,9 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: "upgrade-v0.2.1"
-      resolved-ref: "45dea22c9d9626e5eb2425416f6ed20e26fd1e5e"
-      url: "https://github.com/kumulynja/ldk-node-flutter"
+      ref: main
+      resolved-ref: "4afd8acbbb19edc2b259b4e8abf4131c90f389de"
+      url: "https://github.com/LtbLightning/ldk-node-flutter"
     source: git
     version: "0.2.1"
   lints:
