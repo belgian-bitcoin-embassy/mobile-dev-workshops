@@ -191,8 +191,10 @@ class BitcoinWalletService implements WalletService {
       config: BlockchainConfig.esplora(
         config: EsploraConfig(
           baseUrl: Platform.isAndroid
-              ? "http://10.0.2.2:3002"
-              : "http://127.0.0.1:3002",
+              ?
+              //10.0.2.2 to access the AVD
+              'http://10.0.2.2:3002'
+              : 'http://127.0.0.1:3002',
           stopGap: 10,
         ),
       ),
@@ -459,7 +461,12 @@ class LightningWalletService implements WalletService {
               'http://10.0.2.2:3002'
               : 'http://127.0.0.1:3002',
         )
-        .setNetwork(ldk_node.Network.Regtest);
+        .setNetwork(ldk_node.Network.Regtest)
+        .setListeningAddresses(
+      [
+        const ldk_node.SocketAddress.hostname(addr: "0.0.0.0", port: 3003),
+      ],
+    );
 
     try {
       final node = await builder.build();

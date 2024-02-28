@@ -15,8 +15,10 @@ void main() async {
     mnemonicRepository: SecureStorageMnemonicRepository(),
   );
   // ...and have it initialized before the app starts.
-  await bitcoinWalletService.init();
-  await lightningWalletService.init();
+  await Future.wait([
+    bitcoinWalletService.init(),
+    lightningWalletService.init(),
+  ]);
 
   runApp(MyApp(
     bitcoinWalletService: bitcoinWalletService,
