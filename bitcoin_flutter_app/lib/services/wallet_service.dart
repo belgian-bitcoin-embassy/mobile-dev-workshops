@@ -110,18 +110,20 @@ class BitcoinWalletService implements WalletService {
 
     // 5. Set the fee rate for the transaction based on the provided fee rate or absolute fee
 
-    // 6. Finish the transaction building and sign it with the wallet
+    // 6. Finish the transaction building
 
-    // 7. Extract the transaction from the finalized and signed PSBT
+    // 7. Sign the transaction with the wallet
 
-    // 8. Broadcast the transaction to the network with the blockchain
+    // 8. Extract the transaction from the finalized and signed PSBT
 
-    // 9. Return the transaction id
+    // 9. Broadcast the transaction to the network with the blockchain
+
+    // 10. Return the transaction id
     return '<transaction_id>';
   }
 
   Future<RecommendedFeeRatesEntity> calculateFeeRates() async {
-    // 10. Change the hardcoded fee rates to fees estimated by the blockchain data
+    // 11. Change the hardcoded fee rates to fees estimated by the blockchain data
     return const RecommendedFeeRatesEntity(
       highPriority: 35,
       mediumPriority: 30,
