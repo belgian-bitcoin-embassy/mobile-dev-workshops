@@ -77,6 +77,7 @@ class BitcoinWalletService implements WalletService {
 
     // 2. Map the transactions as returned by BDK to our own TransactionEntity
     //   data model and return them as a list
+    return [];
   }
 
   bool get hasWallet => _wallet != null;
