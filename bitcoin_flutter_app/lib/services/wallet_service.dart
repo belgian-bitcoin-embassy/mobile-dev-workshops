@@ -117,24 +117,16 @@ class BitcoinWalletService implements WalletService {
     // 8. Broadcast the transaction to the network with the blockchain
 
     // 9. Return the transaction id
+    return '<transaction_id>';
   }
 
   Future<RecommendedFeeRatesEntity> calculateFeeRates() async {
-    final [highPriority, mediumPriority, lowPriority, noPriority] =
-        await Future.wait(
-      [
-        _blockchain.estimateFee(5),
-        _blockchain.estimateFee(144),
-        _blockchain.estimateFee(504),
-        _blockchain.estimateFee(1008),
-      ],
-    );
-
-    return RecommendedFeeRatesEntity(
-      highPriority: highPriority.asSatPerVb(),
-      mediumPriority: mediumPriority.asSatPerVb(),
-      lowPriority: lowPriority.asSatPerVb(),
-      noPriority: noPriority.asSatPerVb(),
+    // 10. Change the hardcoded fee rates to fees estimated by the blockchain data
+    return const RecommendedFeeRatesEntity(
+      highPriority: 35,
+      mediumPriority: 30,
+      lowPriority: 25,
+      noPriority: 10,
     );
   }
 
