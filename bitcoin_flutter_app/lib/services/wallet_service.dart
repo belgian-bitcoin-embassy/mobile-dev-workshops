@@ -64,7 +64,8 @@ class BitcoinWalletService implements WalletService {
   Future<String> generateInvoice() async {
     // 1. Get the next external address from the wallet
 
-    // 2. return the address as a string
+    // 2. return the address as a string instead
+    return '<real address here>';
   }
 
   bool get hasWallet => _wallet != null;
