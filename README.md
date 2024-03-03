@@ -25,7 +25,7 @@ Due to time constraints, we will not be able to help with installation issues du
 
 ### Install an IDE
 
-The instructor of the workshops will be using [Visual Studio Code](https://code.visualstudio.com/), so it might be easier to follow along if you use it too, but any IDE that supports Flutter development will work.
+The instructor of the workshops will be using [VSCodium](https://vscodium.com/), a free and opensource distribution of [Visual Studio Code](https://code.visualstudio.com/) without Microsoft's telemetry/tracking, so it might be easier to follow along if you use it too, but any IDE that supports Flutter development will work.
 
 If you install Visual Studio Code, make sure to also install the [Flutter extension](https://marketplace.visualstudio.com/items?itemName=Dart-Code.flutter).
 
