@@ -1,4 +1,3 @@
-import 'package:bdk_flutter/bdk_flutter.dart';
 import 'package:bitcoin_flutter_app/repositories/mnemonic_repository.dart';
 
 abstract class WalletService {
