@@ -5,12 +5,13 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:bitcoin_flutter_app/repositories/mnemonic_repository.dart';
-import 'package:bitcoin_flutter_app/services/wallet_service.dart';
+import 'package:mobile_dev_workshops/repositories/mnemonic_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:bitcoin_flutter_app/main.dart';
+import 'package:mobile_dev_workshops/main.dart';
+import 'package:mobile_dev_workshops/services/wallets/impl/bitcoin_wallet_service.dart';
+import 'package:mobile_dev_workshops/services/wallets/impl/lightning_wallet_service.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {

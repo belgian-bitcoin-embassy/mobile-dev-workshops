@@ -1,8 +1,8 @@
-import 'package:bitcoin_flutter_app/constants.dart';
-import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
-import 'package:bitcoin_flutter_app/view_models/wallet_balance_view_model.dart';
-import 'package:bitcoin_flutter_app/widgets/wallets/add_new_wallet_card.dart';
-import 'package:bitcoin_flutter_app/widgets/wallets/wallet_balance_card.dart';
+import 'package:mobile_dev_workshops/constants.dart';
+import 'package:mobile_dev_workshops/enums/wallet_type.dart';
+import 'package:mobile_dev_workshops/view_models/wallet_balance_view_model.dart';
+import 'package:mobile_dev_workshops/widgets/wallets/add_new_wallet_card.dart';
+import 'package:mobile_dev_workshops/widgets/wallets/wallet_balance_card.dart';
 import 'package:flutter/material.dart';
 
 class WalletCardsList extends StatelessWidget {

@@ -1,6 +1,6 @@
-import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
-import 'package:bitcoin_flutter_app/features/wallet_actions/receive/receive_state.dart';
-import 'package:bitcoin_flutter_app/services/wallet_service.dart';
+import 'package:mobile_dev_workshops/enums/wallet_type.dart';
+import 'package:mobile_dev_workshops/features/wallet_actions/receive/receive_state.dart';
+import 'package:mobile_dev_workshops/services/wallets/wallet_service.dart';
 
 class ReceiveController {
   final ReceiveState Function() _getState;

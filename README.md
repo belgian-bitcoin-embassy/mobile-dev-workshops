@@ -87,7 +87,7 @@ We will use the [Bitcoin Development Kit (BDK)](https://bitcoindevkit.org) to im
 
 #### App creation
 
-Start by creating a new Flutter project using the `flutter create` command. You can choose any name for the project, but for the sake of this workshop, we will use `bitcoin_flutter_app`, so run `flutter create bitcoin_flutter_app` where you want to create the project.
+Start by creating a new Flutter project using the `flutter create` command. You can choose any name for the project, but for the sake of this workshop, we will use `mobile_dev_workshops`, so run `flutter create mobile_dev_workshops` where you want to create the project.
 
 From the created project folder, you should now be able to run the app on a connected device or emulator using `flutter run`.
 If an app with a counter button is shown, everything is working correctly.
@@ -217,7 +217,7 @@ class AddNewWalletCard extends StatelessWidget {
 The `wallet_balance_card.dart` file will contain a widget that will be displayed in the list for each wallet. For now, it will just be a card with an icon indicating the type of wallet, a label and the balance underneath. It will also have a closing button in the upper corner to easily delete the wallet just for testing now. To be able to show the icon, we will use the `SvgPicture` widget from the `flutter_svg` package, so make sure to do `flutter pub add flutter_svg` from the command line. The specific icons will be placed in a folder in the root of the project, called `assets`, and added to the `pubspec.yaml` file to be able to use them in the app. The `wallet_balance_card.dart` widget will now look like this:
 
 ```dart
-import 'package:bitcoin_flutter_app/constants.dart';
+import 'package:mobile_dev_workshops/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
@@ -2073,7 +2073,7 @@ The timestamp should be shown in a human readable format, so we can add another 
 Taking all of the above into account, create a file `transactions_list_item_view_model.dart` in the `view_models` folder and add the class `TransactionsListItemViewModel` with its fields and methods like this:
 
 ```dart
-import 'package:bitcoin_flutter_app/entities/transaction_entity.dart';
+import 'package:mobile_dev_workshops/entities/transaction_entity.dart';
 import 'package:equatable/equatable.dart';
 
 class TransactionsListItemViewModel extends Equatable {
@@ -2453,8 +2453,8 @@ In the `send_controller.dart` file, add the `SendController` class. This control
 Add the methods to handle the input changes, for now we will skip the fee slider and only implement the amount and address input fields. Also add a method to handle the send button press:
 
 ```dart
-import 'package:bitcoin_flutter_app/features/wallet_actions/send/send_state.dart';
-import 'package:bitcoin_flutter_app/services/wallet_service.dart';
+import 'package:mobile_dev_workshops/features/wallet_actions/send/send_state.dart';
+import 'package:mobile_dev_workshops/services/wallets/wallet_service.dart';
 
 class SendController {
   final SendState Function() _getState;
@@ -2979,7 +2979,7 @@ And if time permits:
 
 In the previous workshop we used the Bitcoin Development Kit to build an on-chain wallet, in this workshop the [Lightning Development Kit (LDK)](https://lightningdevkit.org) will be used. Similar to the Bitcoin Development Kit, the Lightning Development Kit is a set of libraries to build Lightning wallets and applications. It is a Rust library that permits creating a full Lightning Network node. A lot goes into creating a full Lightning Network node though, so luckily for us, a reference implementation for a full functional node build with LDK is available in another library called [LDK Node](https://github.com/lightningdevkit/ldk-node). This library also has a Flutter package that has bindings to the LDK Node library, so we can use it in our Flutter app and quickly have a real Lightning Node embedded and running on our mobile device. The Flutter package is called [ldk_node](https://pub.dev/packages/ldk_node) on pub.dev or [ldk-node-flutter](https://github.com/LtbLightning/ldk-node-flutter) on github.
 
-To add LDK Node to our app, run the following command from inside the `bitcoin_flutter_app` directory:
+To add LDK Node to our app, run the following command from inside the `mobile_dev_workshops` directory:
 
 ```bash
 flutter pub add ldk_node

@@ -1,5 +1,5 @@
-import 'package:bitcoin_flutter_app/features/reserved_amount_actions/open_channel/open_channel_state.dart';
-import 'package:bitcoin_flutter_app/services/wallet_service.dart';
+import 'package:mobile_dev_workshops/features/reserved_amount_actions/open_channel/open_channel_state.dart';
+import 'package:mobile_dev_workshops/services/wallets/impl/lightning_wallet_service.dart';
 
 class OpenChannelController {
   final OpenChannelState Function() _getState;

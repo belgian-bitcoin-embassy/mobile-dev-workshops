@@ -1,7 +1,7 @@
-import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
-import 'package:bitcoin_flutter_app/view_models/reserved_amounts_list_item_view_model.dart';
-import 'package:bitcoin_flutter_app/view_models/transactions_list_item_view_model.dart';
-import 'package:bitcoin_flutter_app/view_models/wallet_balance_view_model.dart';
+import 'package:mobile_dev_workshops/enums/wallet_type.dart';
+import 'package:mobile_dev_workshops/view_models/reserved_amounts_list_item_view_model.dart';
+import 'package:mobile_dev_workshops/view_models/transactions_list_item_view_model.dart';
+import 'package:mobile_dev_workshops/view_models/wallet_balance_view_model.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 

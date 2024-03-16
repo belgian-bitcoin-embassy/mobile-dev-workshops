@@ -1,6 +1,8 @@
-import 'package:bitcoin_flutter_app/features/reserved_amount_actions/reserved_amount_actions_bottom_sheet.dart';
-import 'package:bitcoin_flutter_app/services/wallet_service.dart';
-import 'package:bitcoin_flutter_app/view_models/reserved_amounts_list_item_view_model.dart';
+import 'package:mobile_dev_workshops/features/reserved_amount_actions/reserved_amount_actions_bottom_sheet.dart';
+import 'package:mobile_dev_workshops/services/wallets/impl/bitcoin_wallet_service.dart';
+import 'package:mobile_dev_workshops/services/wallets/impl/lightning_wallet_service.dart';
+import 'package:mobile_dev_workshops/services/wallets/wallet_service.dart';
+import 'package:mobile_dev_workshops/view_models/reserved_amounts_list_item_view_model.dart';
 import 'package:flutter/material.dart';
 
 class ReservedAmountsListItem extends StatelessWidget {

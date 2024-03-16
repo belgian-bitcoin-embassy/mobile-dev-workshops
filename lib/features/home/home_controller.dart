@@ -1,9 +1,10 @@
-import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
-import 'package:bitcoin_flutter_app/features/home/home_state.dart';
-import 'package:bitcoin_flutter_app/services/wallet_service.dart';
-import 'package:bitcoin_flutter_app/view_models/reserved_amounts_list_item_view_model.dart';
-import 'package:bitcoin_flutter_app/view_models/transactions_list_item_view_model.dart';
-import 'package:bitcoin_flutter_app/view_models/wallet_balance_view_model.dart';
+import 'package:mobile_dev_workshops/enums/wallet_type.dart';
+import 'package:mobile_dev_workshops/features/home/home_state.dart';
+import 'package:mobile_dev_workshops/services/wallets/impl/lightning_wallet_service.dart';
+import 'package:mobile_dev_workshops/services/wallets/wallet_service.dart';
+import 'package:mobile_dev_workshops/view_models/reserved_amounts_list_item_view_model.dart';
+import 'package:mobile_dev_workshops/view_models/transactions_list_item_view_model.dart';
+import 'package:mobile_dev_workshops/view_models/wallet_balance_view_model.dart';
 
 class HomeController {
   final HomeState Function() _getState;

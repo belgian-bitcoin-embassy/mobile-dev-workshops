@@ -1,9 +1,9 @@
-import 'package:bitcoin_flutter_app/constants.dart';
-import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
-import 'package:bitcoin_flutter_app/features/wallet_actions/send/send_controller.dart';
-import 'package:bitcoin_flutter_app/features/wallet_actions/send/send_state.dart';
-import 'package:bitcoin_flutter_app/services/wallet_service.dart';
-import 'package:bitcoin_flutter_app/widgets/wallets/wallet_selection_field.dart';
+import 'package:mobile_dev_workshops/constants.dart';
+import 'package:mobile_dev_workshops/enums/wallet_type.dart';
+import 'package:mobile_dev_workshops/features/wallet_actions/send/send_controller.dart';
+import 'package:mobile_dev_workshops/features/wallet_actions/send/send_state.dart';
+import 'package:mobile_dev_workshops/services/wallets/wallet_service.dart';
+import 'package:mobile_dev_workshops/widgets/wallets/wallet_selection_field.dart';
 import 'package:flutter/material.dart';
 
 class SendTab extends StatefulWidget {

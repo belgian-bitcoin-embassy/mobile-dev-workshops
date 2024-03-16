@@ -1,5 +1,5 @@
-import 'package:bitcoin_flutter_app/constants.dart';
-import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
+import 'package:mobile_dev_workshops/constants.dart';
+import 'package:mobile_dev_workshops/enums/wallet_type.dart';
 import 'package:flutter/material.dart';
 
 class AddNewWalletCard extends StatelessWidget {

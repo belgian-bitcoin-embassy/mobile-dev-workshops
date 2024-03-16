@@ -1,4 +1,4 @@
-import 'package:bitcoin_flutter_app/entities/transaction_entity.dart';
+import 'package:mobile_dev_workshops/entities/transaction_entity.dart';
 import 'package:equatable/equatable.dart';
 
 class TransactionsListItemViewModel extends Equatable {

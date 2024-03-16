@@ -1,6 +1,7 @@
-import 'package:bitcoin_flutter_app/features/home/home_screen.dart';
-import 'package:bitcoin_flutter_app/repositories/mnemonic_repository.dart';
-import 'package:bitcoin_flutter_app/services/wallet_service.dart';
+import 'package:mobile_dev_workshops/features/home/home_screen.dart';
+import 'package:mobile_dev_workshops/repositories/mnemonic_repository.dart';
+import 'package:mobile_dev_workshops/services/wallets/impl/bitcoin_wallet_service.dart';
+import 'package:mobile_dev_workshops/services/wallets/impl/lightning_wallet_service.dart';
 import 'package:flutter/material.dart';
 
 void main() async {

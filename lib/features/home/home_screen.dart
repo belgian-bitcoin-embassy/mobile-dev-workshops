@@ -1,12 +1,13 @@
-import 'package:bitcoin_flutter_app/constants.dart';
-import 'package:bitcoin_flutter_app/enums/wallet_type.dart';
-import 'package:bitcoin_flutter_app/features/home/home_controller.dart';
-import 'package:bitcoin_flutter_app/features/home/home_state.dart';
-import 'package:bitcoin_flutter_app/services/wallet_service.dart';
-import 'package:bitcoin_flutter_app/widgets/reserved_amounts/reserved_amounts_list.dart';
-import 'package:bitcoin_flutter_app/widgets/transactions/transactions_list.dart';
-import 'package:bitcoin_flutter_app/widgets/wallets/wallet_cards_list.dart';
-import 'package:bitcoin_flutter_app/features/wallet_actions/wallet_actions_bottom_sheet.dart';
+import 'package:mobile_dev_workshops/constants.dart';
+import 'package:mobile_dev_workshops/enums/wallet_type.dart';
+import 'package:mobile_dev_workshops/features/home/home_controller.dart';
+import 'package:mobile_dev_workshops/features/home/home_state.dart';
+import 'package:mobile_dev_workshops/services/wallets/impl/bitcoin_wallet_service.dart';
+import 'package:mobile_dev_workshops/services/wallets/wallet_service.dart';
+import 'package:mobile_dev_workshops/widgets/reserved_amounts/reserved_amounts_list.dart';
+import 'package:mobile_dev_workshops/widgets/transactions/transactions_list.dart';
+import 'package:mobile_dev_workshops/widgets/wallets/wallet_cards_list.dart';
+import 'package:mobile_dev_workshops/features/wallet_actions/wallet_actions_bottom_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 

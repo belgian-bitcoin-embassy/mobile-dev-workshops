@@ -1,5 +1,6 @@
-import 'package:bitcoin_flutter_app/features/reserved_amount_actions/move_to_savings/move_to_savings_state.dart';
-import 'package:bitcoin_flutter_app/services/wallet_service.dart';
+import 'package:mobile_dev_workshops/features/reserved_amount_actions/move_to_savings/move_to_savings_state.dart';
+import 'package:mobile_dev_workshops/services/wallets/impl/bitcoin_wallet_service.dart';
+import 'package:mobile_dev_workshops/services/wallets/impl/lightning_wallet_service.dart';
 
 class MoveToSavingsController {
   final MoveToSavingsState Function() _getState;

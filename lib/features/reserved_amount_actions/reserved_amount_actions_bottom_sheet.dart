@@ -1,7 +1,8 @@
-import 'package:bitcoin_flutter_app/constants.dart';
-import 'package:bitcoin_flutter_app/features/reserved_amount_actions/open_channel/open_channel_tab.dart';
-import 'package:bitcoin_flutter_app/features/reserved_amount_actions/move_to_savings/move_to_savings_tab.dart';
-import 'package:bitcoin_flutter_app/services/wallet_service.dart';
+import 'package:mobile_dev_workshops/constants.dart';
+import 'package:mobile_dev_workshops/features/reserved_amount_actions/open_channel/open_channel_tab.dart';
+import 'package:mobile_dev_workshops/features/reserved_amount_actions/move_to_savings/move_to_savings_tab.dart';
+import 'package:mobile_dev_workshops/services/wallets/impl/bitcoin_wallet_service.dart';
+import 'package:mobile_dev_workshops/services/wallets/impl/lightning_wallet_service.dart';
 import 'package:flutter/material.dart';
 
 class ReservedAmountActionsBottomSheet extends StatelessWidget {
