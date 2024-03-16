@@ -20,7 +20,7 @@ class OpenChannelTabState extends State<OpenChannelTab> {
     host: Platform.isAndroid ? '10.0.2.2' : '127.0.0.1',
     port: 9735,
     nodeId:
-        '02f3c8550d707bb94844d3c1c02a0c12f3bd3748aaca1726ae1d4f553f6f190d07',
+        '02042ef4edb2e33de8aaa30af3bcbfe04af73475ee80d524dad3dfc700f58794d6',
     announceChannel: true,
   );
   late OpenChannelController _controller;
