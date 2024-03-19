@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:bdk_flutter/bdk_flutter.dart';
 import 'package:mobile_dev_workshops/entities/recommended_fee_rates_entity.dart';
 import 'package:mobile_dev_workshops/entities/transaction_entity.dart';
@@ -164,13 +162,9 @@ class BitcoinWalletService implements WalletService {
 
   Future<void> _initBlockchain() async {
     _blockchain = await Blockchain.create(
-      config: BlockchainConfig.esplora(
+      config: const BlockchainConfig.esplora(
         config: EsploraConfig(
-          baseUrl: Platform.isAndroid
-              ?
-              //10.0.2.2 to access the AVD
-              'http://10.0.2.2:3002'
-              : 'http://127.0.0.1:3002',
+          baseUrl: 'https://mutinynet.com/api/',
           stopGap: 10,
         ),
       ),
@@ -182,7 +176,7 @@ class BitcoinWalletService implements WalletService {
     _wallet = await Wallet.create(
       descriptor: descriptors.$1,
       changeDescriptor: descriptors.$2,
-      network: Network.Regtest,
+      network: Network.Signet,
       databaseConfig: const DatabaseConfig
           .memory(), // Txs and UTXOs related to the wallet will be stored in memory
     );
@@ -191,7 +185,7 @@ class BitcoinWalletService implements WalletService {
   Future<(Descriptor receive, Descriptor change)> _getBip84TemplateDescriptors(
     Mnemonic mnemonic,
   ) async {
-    const network = Network.Regtest;
+    const network = Network.Signet;
     final secretKey =
         await DescriptorSecretKey.create(network: network, mnemonic: mnemonic);
     final receivingDescriptor = await Descriptor.newBip84(

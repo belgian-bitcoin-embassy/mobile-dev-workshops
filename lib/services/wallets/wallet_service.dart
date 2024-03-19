@@ -13,8 +13,8 @@ abstract class WalletService {
   Future<int> getSpendableBalanceSat();
   Future<(String? bitcoinInvoice, String? lightningInvoice)> generateInvoices({
     int? amountSat,
-    int? expirySecs,
-    String? description,
+    int expirySecs,
+    String description,
   });
   Future<List<TransactionEntity>> getTransactions();
   Future<String> pay(
