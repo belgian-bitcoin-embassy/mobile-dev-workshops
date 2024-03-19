@@ -220,3 +220,49 @@ Future<void> openChannel({
 To get the option to open a channel, press the pending balance in the transactions overview, which should appear if you have sent funds to the bitcoin address of the spending wallet and the transaction has been confirmed.
 
 ### Pay an invoice
+
+Now that the wallet was funded and a channel was opened, you have outbound capacity and should be able to pay invoices from the 'Send funds' tab in the wallet actions bottom sheet.
+
+When the button is pressed, calls propogate through the controller and the `pay` function of the `LightningWalletService` class is called. This function should pay the invoice with the given bolt11 string.
+
+```dart
+@override
+Future<String> pay(
+String invoice, {
+int? amountSat,
+double? satPerVbyte, // Not used in Lightning
+int? absoluteFeeSat, // Not used in Lightning
+}) async {
+    if (_node == null) {
+      throw NoWalletException('A Lightning node has to be initialized first!');
+    }
+
+    // 13. Use the node to send a payment.
+    //  If the amount is not specified, suppose it is embeded in the invoice.
+    //  If the amount is specified, suppose the invoice is a zero-amount invoice and specify the amount when sending the payment.
+
+    // 14. Return the payment hash as a hex string
+    return _convertU8Array32ToHex([]);
+}
+```
+
+Try to make some payments with the app to other nodes on mutinynet and see if they are successful.
+You can get invoices from the mutinynet faucet's lightning address here: https://www.lnurlpay.com/refund@lnurl-staging.mutinywallet.com. You can also try to send to other participants in the workshop.
+
+### Get payment history
+
+Now that we are able to send and receive payments, we should also be able to see the payment history in the app. You can get this to work by implementing the `getTransactions` function in the `LightningWalletService` class.
+
+```dart
+@override
+Future<List<TransactionEntity>> getTransactions() async {
+    if (_node == null) {
+        throw NoWalletException('A Lightning node has to be initialized first!');
+    }
+
+    // 15. Get all payments of the node
+
+    // 16. Filter the payments to only include successful ones and return them as a list of `TransactionEntity` instances.
+    return [];
+}
+```

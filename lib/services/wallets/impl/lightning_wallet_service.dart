@@ -27,9 +27,9 @@ class LightningWalletService implements WalletService {
     if (mnemonic != null && mnemonic.isNotEmpty) {
       await _initialize(Mnemonic(mnemonic));
 
-      print(
+      /*print(
         'Lightning node initialized with id: ${(await _node!.nodeId()).hexCode}',
-      );
+      );*/
     }
   }
 
@@ -42,9 +42,10 @@ class LightningWalletService implements WalletService {
     //  secure storage with the wallet type label (_walletType.label) as the key.
 
     await _initialize(mnemonic);
-    print(
+
+    /*print(
       'Lightning Node added with node id: ${(await _node!.nodeId()).hexCode}',
-    );
+    );*/
   }
 
   @override
@@ -62,6 +63,9 @@ class LightningWalletService implements WalletService {
 
   @override
   Future<void> sync() async {
+    if (_node == null) {
+      throw NoWalletException('A Lightning node has to be initialized first!');
+    }
     await _node!.syncWallets();
   }
 
@@ -95,32 +99,6 @@ class LightningWalletService implements WalletService {
 
     // 11. Return the bitcoin address and the bolt11 invoice
     return ('invalid Bitcoin address', 'invalid bolt11 invoice');
-  }
-
-  @override
-  Future<List<TransactionEntity>> getTransactions() async {
-    if (_node == null) {
-      throw NoWalletException('A Lightning node has to be initialized first!');
-    }
-
-    final payments = await _node!.listPayments();
-
-    return payments
-        .where((payment) => payment.status == PaymentStatus.Succeeded)
-        .map((payment) {
-      return TransactionEntity(
-        id: _convertU8Array32ToHex(payment.hash.data),
-        receivedAmountSat: payment.direction == PaymentDirection.Inbound &&
-                payment.amountMsat != null
-            ? payment.amountMsat! ~/ 1000
-            : 0,
-        sentAmountSat: payment.direction == PaymentDirection.Outbound &&
-                payment.amountMsat != null
-            ? payment.amountMsat! ~/ 1000
-            : 0,
-        timestamp: null,
-      );
-    }).toList();
   }
 
   Future<int> get totalOnChainBalanceSat => _node!.totalOnchainBalanceSats();
@@ -167,27 +145,31 @@ class LightningWalletService implements WalletService {
   Future<String> pay(
     String invoice, {
     int? amountSat,
-    double? satPerVbyte,
-    int? absoluteFeeSat,
+    double? satPerVbyte, // Not used in Lightning
+    int? absoluteFeeSat, // Not used in Lightning
   }) async {
     if (_node == null) {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    final hash = amountSat == null
-        ? await _node!.sendPayment(
-            invoice: Bolt11Invoice(
-              signedRawInvoice: invoice,
-            ),
-          )
-        : await _node!.sendPaymentUsingAmount(
-            invoice: Bolt11Invoice(
-              signedRawInvoice: invoice,
-            ),
-            amountMsat: amountSat * 1000,
-          );
-    print('Payment hash: ${_convertU8Array32ToHex(hash.data)}');
-    return _convertU8Array32ToHex(hash.data);
+    // 13. Use the node to send a payment.
+    //  If the amount is not specified, suppose it is embeded in the invoice.
+    //  If the amount is specified, suppose the invoice is a zero-amount invoice and specify the amount when sending the payment.
+
+    // 14. Return the payment hash as a hex string
+    return _convertU8Array32ToHex([]);
+  }
+
+  @override
+  Future<List<TransactionEntity>> getTransactions() async {
+    if (_node == null) {
+      throw NoWalletException('A Lightning node has to be initialized first!');
+    }
+
+    // 15. Get all payments of the node
+
+    // 16. Filter the payments to only include successful ones and return them as a list of `TransactionEntity` instances.
+    return [];
   }
 
   Future<void> _initialize(Mnemonic mnemonic) async {

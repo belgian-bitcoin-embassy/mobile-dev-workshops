@@ -143,3 +143,70 @@ Future<void> openChannel({
     );
 }
 ```
+
+### Pay an invoice
+
+```dart
+@override
+Future<String> pay(
+  String invoice, {
+  int? amountSat,
+  double? satPerVbyte, // Not used in Lightning
+  int? absoluteFeeSat, // Not used in Lightning
+}) async {
+  if (_node == null) {
+    throw NoWalletException('A Lightning node has to be initialized first!');
+  }
+
+  // 13. Use the node to send a payment.
+  //  If the amount is not specified, suppose it is embeded in the invoice.
+  //  If the amount is specified, suppose the invoice is a zero-amount invoice and specify the amount when sending the payment.
+  final hash = amountSat == null
+      ? await _node!.sendPayment(
+          invoice: Bolt11Invoice(
+            signedRawInvoice: invoice,
+          ),
+        )
+      : await _node!.sendPaymentUsingAmount(
+          invoice: Bolt11Invoice(
+            signedRawInvoice: invoice,
+          ),
+          amountMsat: amountSat * 1000,
+        );
+
+  // 14. Return the payment hash as a hex string
+  return _convertU8Array32ToHex(hash.data);
+}
+```
+
+### Get payment history
+
+```dart
+@override
+Future<List<TransactionEntity>> getTransactions() async {
+  if (_node == null) {
+      throw NoWalletException('A Lightning node has to be initialized first!');
+  }
+
+  // 15. Get all payments of the node
+  final payments = await _node!.listPayments();
+
+  // 16. Filter the payments to only include successful ones and return them as a list of `TransactionEntity` instances.
+  return payments
+      .where((payment) => payment.status == PaymentStatus.Succeeded)
+      .map((payment) {
+      return TransactionEntity(
+      id: _convertU8Array32ToHex(payment.hash.data),
+      receivedAmountSat: payment.direction == PaymentDirection.Inbound &&
+              payment.amountMsat != null
+          ? payment.amountMsat! ~/ 1000
+          : 0,
+      sentAmountSat: payment.direction == PaymentDirection.Outbound &&
+              payment.amountMsat != null
+          ? payment.amountMsat! ~/ 1000
+          : 0,
+      timestamp: null,
+      );
+  }).toList();
+}
+```
