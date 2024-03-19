@@ -10,52 +10,20 @@ To implement a complete app including UI components, state management, controlle
 
 Take a look at the different files and folders in the [`lib`](./lib/) folder. This is the folder where the code of a Flutter/Dart app is located.
 
-### Local development
-
-#### Polar
-
-To not spend real bitcoin during development and have more control over the transaction progress, a local regtest network can be used. If you followed the instructions in the [prerequisites](./PREREQUISITES.md), you should have Polar installed and working.
-Create a new regtest network with a Bitcoin node and some Lightning Network nodes and start the network.
-
-#### Esplora
-
-To be able to connect to the Bitcoin node from the LDK node library, an Electrum Server needs to run alongside the node, since the Polar node itself only exposes the Bitcoin Core RPC interface and not an Electrum RPC interface. To do this, we will use the Esplora Server implementation of mempool, named [electrs](https://github.com/mempool/electrs).
-
-To set it up, just clone the repo in a location of your preference with the following command, enter in the cloned folder and checkout the `mempool` branch:
-
-```bash
-git clone https://github.com/mempool/electrs && cd electrs
-git checkout mempool
-```
-
-Assuming the Rust toolchain is installed as required in the prerequisites, we can now run the server with the following command specifying the path to the `.bitcoin` directory of your Bitcoin Core node in Polar and specify the network, which is regtest:
-
-```bash
-cargo run --release --bin electrs -- -vvvv --daemon-dir ~/.polar/networks/1/volumes/bitcoind/backend1/ --network=regtest
-```
-
-If you already created more networks in Polar, the 1 in the path of the `--daemon-dir`` parameter might be different. To find the correct path, check out the Mounts in Docker for the Bitcoin Core (bitcoind) container. It should be the one mounted to the internal /home/bitcoin/.bitcoin path.
-
-If it is the first time you run it, first some dependencies will be downloaded and installed, but then the server should start and you should see something like this:
-
-```log
-DEBUG - Server listening on 127.0.0.1:24224
-DEBUG - Running accept thread
-...
-INFO - Electrum RPC server running on 127.0.0.1:60401
-INFO - REST server running on 127.0.0.1:3002
-```
-
-The HTTP REST server is what we need to connect to from the app. Check the port it is running on, in most cases it will be on port 3002, since it is the default port.
-
 #### Lightning Development Kit (LDK)
 
 In the previous workshop we used the Bitcoin Development Kit to build an on-chain wallet, in this workshop the [Lightning Development Kit (LDK)](https://lightningdevkit.org) will be used. It is a Rust library that permits creating a full-fledged Lightning Network node. A lot goes into creating a full Lightning Network node though, so luckily for us, a reference implementation for a full functional node build with LDK is available in another library called [LDK Node](https://github.com/lightningdevkit/ldk-node). This library also has a Flutter package that has bindings to the LDK Node library, so we can use it in our Flutter app and quickly have a real Lightning Node embedded and running on our mobile device. The Flutter package is called [ldk_node](https://pub.dev/packages/ldk_node) on pub.dev or [ldk-node-flutter](https://github.com/LtbLightning/ldk-node-flutter) on github.
 
-To add LDK Node to our app, run the following command from inside the `mobile_dev_workshops` directory:
+To add LDK Node to an app, you can simply run `flutter pub add ldk_node` or add it to the dependencies in the `pubspec.yaml` file of your project manually. We did the latter for you already and specified the main branch as to have the latest version v0.2.1 of the library, which is not yet released on pub.dev:
 
-```bash
-flutter pub add ldk_node
+```yaml
+dependencies:
+  # ...
+  ldk_node:
+    git:
+      url: https://github.com/LtbLightning/ldk-node-flutter
+      ref: main
+  # ...
 ```
 
 ### Run the app
