@@ -40,33 +40,9 @@ So let's start implementing the missing parts of the `LightningWalletService` cl
 
 Try to implement the steps yourself first and only then check the [solution](#solutions).
 
-### LDK Node
-
-In the previous workshop we used the Bitcoin Development Kit to build an on-chain wallet, in this workshop the [Lightning Development Kit (LDK)](https://lightningdevkit.org/) will be used. Similar to the Bitcoin Development Kit, the Lightning Development Kit is a set of libraries to build Lightning wallets and applications. It is a Rust library that permits creating a full Lightning Network node. A lot goes into creating a full Lightning Network node though, so luckily for us, a reference implementation for a full functional node build with LDK is available in another library called [LDK Node](https://github.com/lightningdevkit/ldk-node). This library also has a Flutter package that has bindings to the LDK Node library, so we can use it in our Flutter app and quickly have a real Lightning Node embedded and running on our mobile device. The Flutter package is called [ldk_node](https://pub.dev/packages/ldk_node) on pub.dev or [ldk-node-flutter](https://github.com/LtbLightning/ldk-node-flutter) on github.
-
-The principal class of the LDK Node library is the `Node` class. It is the main class that represents a Lightning Network node and will be used to open channels, send and receive payments, etc.
-In the `LightningWalletService` class, a field of type `Node` is already declared, but it is giving an error because the `ldk_node` package is not yet added to the project.
-
-```dart
-class LightningWalletService implements WalletService {
-    final WalletType _walletType = WalletType.lightning;
-    final MnemonicRepository _mnemonicRepository;
-    // 1. Add ldk_node as a dependency
-    Node? _node;
-
-    // ...
-}
-```
-
-To add the LDK Node library to our app, run the following command:
-
-```bash
-flutter pub add ldk_node
-```
-
 ### Generating a new Lightning wallet
 
-A Lightning Node needs a seed phrase or mnemonic to derive private and public keys from to receive funds and sign transactions. So generating a mnemonic is the first thing to do when a user presses the `+ Add wallet: Spending` button in the app.
+A Lightning Node needs a seed phrase or mnemonic to derive private and public keys from to be able to receive funds and sign transactions. So generating a mnemonic is the first thing to do when a user presses the `+ Add wallet: Spending` button in the app.
 Pressing this button invokes a controller function and in the end calls the addWallet function of the `LightningWalletService` class. This function should generate a new mnemonic and then initialize the wallet by setting up the Lightning Node with it.
 
 The code to generate the mnemonic is left out of the `addWallet` function in the `LightningWalletService` class for you to complete.
@@ -74,10 +50,10 @@ The code to generate the mnemonic is left out of the `addWallet` function in the
 ```dart
 @override
 Future<void> addWallet() async {
-    // 2. Use ldk_node's Mnemonic class to generate a new, valid mnemonic
+    // 1. Use ldk_node's Mnemonic class to generate a new, valid mnemonic
     final mnemonic = Mnemonic('invalid mnemonic');
 
-    // 3. Use the MnemonicRepository to store the mnemonic in the device's
+    // 2. Use the MnemonicRepository to store the mnemonic in the device's
     //  secure storage with the wallet type label (_walletType.label) as the key.
 
     await _initialize(mnemonic);
@@ -93,7 +69,7 @@ After generating the mnemonic, the `addWallet` function calls the `_initialize` 
 
 ```dart
 Future<void> _initialize(Mnemonic mnemonic) async {
-    // 4. To create a Lightning Node instance, ldk_node provides a Builder class.
+    // 3. To create a Lightning Node instance, ldk_node provides a Builder class.
     //  Configure a Builder class instance by setting
     //    - the mnemonic as the entropy to create the node's wallet/keys from
     //    - the storage directory path to `_nodePath`,
@@ -101,10 +77,10 @@ Future<void> _initialize(Mnemonic mnemonic) async {
     //    - the Esplora server URL to `https://mutinynet.com/api/`
     //    - a listening addresses to 0.0.0.0:9735
 
-    // 5. Build the node from the builder and assign it to the `_node` variable
+    // 4. Build the node from the builder and assign it to the `_node` variable
     //  so it can be used in the rest of the class.
 
-    // 6. Start the node
+    // 5. Start the node
 
 }
 ```
@@ -121,9 +97,9 @@ The amount that can be spend is the sum of the outbound capacity of all channels
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 7. Get all channels of the node and sum the usable channels' outbound capacity
+    // 6. Get all channels of the node and sum the usable channels' outbound capacity
 
-    // 8. Return the balance in sats
+    // 7. Return the balance in sats
 }
 ```
 
@@ -144,13 +120,13 @@ Future<(String?, String?)> generateInvoices({
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 9. Based on an amount of sats being passed or not, generate a bolt11 invoice
+    // 8. Based on an amount of sats being passed or not, generate a bolt11 invoice
     //  to receive a fixed amount or a variable amount of sats.
 
-    // 10. As a fallback, also generate a new on-chain address to receive funds
+    // 9. As a fallback, also generate a new on-chain address to receive funds
     //  in case the sender doesn't support Lightning payments.
 
-    // 11. Return the bitcoin address and the bolt11 invoice
+    // 10. Return the bitcoin address and the bolt11 invoice
     return ('invalid Bitcoin address', 'invalid bolt11 invoice');
 }
 ```
@@ -180,7 +156,7 @@ Future<void> openChannel({
         throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 12. Connect to a node and open a new channel.
+    // 11. Connect to a node and open a new channel.
 
 }
 ```
@@ -205,11 +181,11 @@ int? absoluteFeeSat, // Not used in Lightning
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 13. Use the node to send a payment.
+    // 12. Use the node to send a payment.
     //  If the amount is not specified, suppose it is embeded in the invoice.
     //  If the amount is specified, suppose the invoice is a zero-amount invoice and specify the amount when sending the payment.
 
-    // 14. Return the payment hash as a hex string
+    // 13. Return the payment hash as a hex string
     return _convertU8Array32ToHex([]);
 }
 ```
@@ -228,9 +204,9 @@ Future<List<TransactionEntity>> getTransactions() async {
         throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 15. Get all payments of the node
+    // 14. Get all payments of the node
 
-    // 16. Filter the payments to only include successful ones and return them as a list of `TransactionEntity` instances.
+    // 15. Filter the payments to only include successful ones and return them as a list of `TransactionEntity` instances.
     return [];
 }
 ```
