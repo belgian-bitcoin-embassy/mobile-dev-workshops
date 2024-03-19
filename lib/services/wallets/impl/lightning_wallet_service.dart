@@ -11,7 +11,6 @@ import 'package:path_provider/path_provider.dart';
 class LightningWalletService implements WalletService {
   final WalletType _walletType = WalletType.lightning;
   final MnemonicRepository _mnemonicRepository;
-  // 1. Add ldk_node as a dependency
   Node? _node;
 
   LightningWalletService({
@@ -35,10 +34,10 @@ class LightningWalletService implements WalletService {
 
   @override
   Future<void> addWallet() async {
-    // 2. Use ldk_node's Mnemonic class to generate a new, valid mnemonic
+    // 1. Use ldk_node's Mnemonic class to generate a new, valid mnemonic
     final mnemonic = Mnemonic('invalid mnemonic');
 
-    // 3. Use the MnemonicRepository to store the mnemonic in the device's
+    // 2. Use the MnemonicRepository to store the mnemonic in the device's
     //  secure storage with the wallet type label (_walletType.label) as the key.
 
     await _initialize(mnemonic);
@@ -75,9 +74,9 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 7. Get all channels of the node and sum the usable channels' outbound capacity
+    // 6. Get all channels of the node and sum the usable channels' outbound capacity
 
-    // 8. Return the balance in sats
+    // 7. Return the balance in sats
     return 0;
   }
 
@@ -91,13 +90,13 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 9. Based on an amount of sats being passed or not, generate a bolt11 invoice
+    // 8. Based on an amount of sats being passed or not, generate a bolt11 invoice
     //  to receive a fixed amount or a variable amount of sats.
 
-    // 10. As a fallback, also generate a new on-chain address to receive funds
+    // 9. As a fallback, also generate a new on-chain address to receive funds
     //  in case the sender doesn't support Lightning payments.
 
-    // 11. Return the bitcoin address and the bolt11 invoice
+    // 10. Return the bitcoin address and the bolt11 invoice
     return ('invalid Bitcoin address', 'invalid bolt11 invoice');
   }
 
@@ -138,7 +137,7 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 12. Connect to a node and open a new channel.
+    // 11. Connect to a node and open a new channel.
   }
 
   @override
@@ -152,11 +151,11 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 13. Use the node to send a payment.
+    // 12. Use the node to send a payment.
     //  If the amount is not specified, suppose it is embeded in the invoice.
     //  If the amount is specified, suppose the invoice is a zero-amount invoice and specify the amount when sending the payment.
 
-    // 14. Return the payment hash as a hex string
+    // 13. Return the payment hash as a hex string
     return _convertU8Array32ToHex([]);
   }
 
@@ -166,14 +165,14 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 15. Get all payments of the node
+    // 14. Get all payments of the node
 
-    // 16. Filter the payments to only include successful ones and return them as a list of `TransactionEntity` instances.
+    // 15. Filter the payments to only include successful ones and return them as a list of `TransactionEntity` instances.
     return [];
   }
 
   Future<void> _initialize(Mnemonic mnemonic) async {
-    // 4. To create a Lightning Node instance, ldk_node provides a Builder class.
+    // 3. To create a Lightning Node instance, ldk_node provides a Builder class.
     //  Configure a Builder class instance by setting
     //    - the mnemonic as the entropy to create the node's wallet/keys from
     //    - the storage directory path to `_nodePath`,
@@ -181,10 +180,10 @@ class LightningWalletService implements WalletService {
     //    - the Esplora server URL to `https://mutinynet.com/api/`
     //    - a listening addresses to 0.0.0.0:9735
 
-    // 5. Build the node from the builder and assign it to the `_node` variable
+    // 4. Build the node from the builder and assign it to the `_node` variable
     //  so it can be used in the rest of the class.
 
-    // 6. Start the node
+    // 5. Start the node
   }
 
   Future<String> get _nodePath async {
