@@ -38,7 +38,7 @@ In the [`lib/services/wallets`](./lib/services/wallets) folder you can find the 
 
 So let's start implementing the missing parts of the `LightningWalletService` class step by step.
 
-Try to implement the steps yourself first and only then check the [solution](#solutions).
+Try to implement the steps yourself first and only then check the [solution](WORKSHOP_2_SOLUTIONS.md).
 
 ### Generating a new Lightning wallet
 
