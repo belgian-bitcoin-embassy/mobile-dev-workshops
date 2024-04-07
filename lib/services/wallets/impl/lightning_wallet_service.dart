@@ -38,6 +38,8 @@ class LightningWalletService implements WalletService {
     // 1. Use ldk_node's Mnemonic class to generate a new, valid mnemonic
     final mnemonic = Mnemonic(seedPhrase: 'invalid mnemonic');
 
+    print('Generated mnemonic: ${mnemonic.seedPhrase}');
+
     await _mnemonicRepository.setMnemonic(
       _walletType.label,
       mnemonic.seedPhrase,
