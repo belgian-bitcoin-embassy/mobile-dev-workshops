@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:mobile_dev_workshops/constants.dart';
 import 'package:mobile_dev_workshops/features/reserved_amount_actions/open_channel/open_channel_controller.dart';
 import 'package:mobile_dev_workshops/features/reserved_amount_actions/open_channel/open_channel_state.dart';
