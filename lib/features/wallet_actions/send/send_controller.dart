@@ -1,6 +1,7 @@
 import 'package:mobile_dev_workshops/enums/wallet_type.dart';
 import 'package:mobile_dev_workshops/features/wallet_actions/send/send_state.dart';
 import 'package:mobile_dev_workshops/services/wallets/impl/bitcoin_wallet_service.dart';
+import 'package:mobile_dev_workshops/services/wallets/impl/lightning_wallet_service.dart';
 import 'package:mobile_dev_workshops/services/wallets/wallet_service.dart';
 
 class SendController {
@@ -39,6 +40,14 @@ class SendController {
         final amountBtc = double.parse(amount);
         final int amountSat = (amountBtc * 100000000).round();
 
+        if (_selectedWalletService is LightningWalletService &&
+            state.invoice != null) {
+          (_selectedWalletService as LightningWalletService).probeRoute(
+            state.invoice!,
+            amountSat: amountSat,
+          );
+        }
+
         if (amountSat > await _selectedWalletService.getSpendableBalanceSat()) {
           _updateState(state.copyWith(
             error: NotEnoughFundsException(),
@@ -59,6 +68,12 @@ class SendController {
     if (invoice == null || invoice.isEmpty) {
       _updateState(_getState().copyWith(invoice: ''));
     } else {
+      if (_selectedWalletService is LightningWalletService) {
+        (_selectedWalletService as LightningWalletService).probeRoute(
+          invoice,
+          amountSat: _getState().amountSat,
+        );
+      }
       _updateState(_getState().copyWith(invoice: invoice));
     }
   }

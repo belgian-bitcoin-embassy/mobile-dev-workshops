@@ -40,10 +40,10 @@ class BitcoinWalletService implements WalletService {
     String? storedMnemonic =
         await _mnemonicRepository.getMnemonic(_walletType.label);
     if (storedMnemonic == null || storedMnemonic.isEmpty) {
-      mnemonic = await Mnemonic.create(WordCount.Words12);
+      mnemonic = await Mnemonic.create(WordCount.words12);
       await _mnemonicRepository.setMnemonic(
         _walletType.label,
-        mnemonic.asString(),
+        await mnemonic.asString(),
       );
     } else {
       mnemonic = await Mnemonic.fromString(storedMnemonic);
@@ -51,7 +51,7 @@ class BitcoinWalletService implements WalletService {
 
     await _initWallet(mnemonic);
     print(
-        'Wallet added with mnemonic: ${mnemonic.asString()} and initialized!');
+        'Wallet added with mnemonic: ${await mnemonic.asString()} and initialized!');
   }
 
   @override
@@ -65,7 +65,7 @@ class BitcoinWalletService implements WalletService {
 
   @override
   Future<void> sync() async {
-    await _wallet!.sync(_blockchain);
+    await _wallet!.sync(blockchain: _blockchain);
   }
 
   @override
@@ -89,7 +89,7 @@ class BitcoinWalletService implements WalletService {
     String? description,
   }) async {
     final invoice = await _wallet!.getAddress(
-      addressIndex: const AddressIndex(),
+      addressIndex: const AddressIndex.increase(),
     );
 
     return (invoice.address, null);
@@ -97,7 +97,7 @@ class BitcoinWalletService implements WalletService {
 
   @override
   Future<List<TransactionEntity>> getTransactions() async {
-    final transactions = await _wallet!.listTransactions(true);
+    final transactions = await _wallet!.listTransactions(includeRaw: true);
 
     return transactions.map((tx) {
       return TransactionEntity(
@@ -121,9 +121,10 @@ class BitcoinWalletService implements WalletService {
     }
 
     // Convert the invoice to an address
-    final address = await Address.create(address: invoice);
+    final address =
+        await Address.fromString(s: invoice, network: Network.signet);
     final script = await address
-        .scriptPubKey(); // Creates the output scripts so that the wallet that generated the address can spend the funds
+        .scriptPubkey(); // Creates the output scripts so that the wallet that generated the address can spend the funds
     var txBuilder = TxBuilder().addRecipient(script, amountSat);
 
     // Set the fee rate for the transaction
@@ -133,10 +134,10 @@ class BitcoinWalletService implements WalletService {
       txBuilder = txBuilder.feeAbsolute(absoluteFeeSat);
     }
 
-    final txBuilderResult = await txBuilder.finish(_wallet!);
-    final sbt = await _wallet!.sign(psbt: txBuilderResult.psbt);
-    final tx = await sbt.extractTx();
-    await _blockchain.broadcast(tx);
+    final (psbt, _) = await txBuilder.finish(_wallet!);
+    await _wallet!.sign(psbt: psbt);
+    final tx = await psbt.extractTx();
+    await _blockchain.broadcast(transaction: tx);
 
     return tx.txid();
   }
@@ -145,18 +146,18 @@ class BitcoinWalletService implements WalletService {
     final [highPriority, mediumPriority, lowPriority, noPriority] =
         await Future.wait(
       [
-        _blockchain.estimateFee(5),
-        _blockchain.estimateFee(144),
-        _blockchain.estimateFee(504),
-        _blockchain.estimateFee(1008),
+        _blockchain.estimateFee(target: 5),
+        _blockchain.estimateFee(target: 144),
+        _blockchain.estimateFee(target: 504),
+        _blockchain.estimateFee(target: 1008),
       ],
     );
 
     return RecommendedFeeRatesEntity(
-      highPriority: highPriority.asSatPerVb(),
-      mediumPriority: mediumPriority.asSatPerVb(),
-      lowPriority: lowPriority.asSatPerVb(),
-      noPriority: noPriority.asSatPerVb(),
+      highPriority: highPriority.satPerVb,
+      mediumPriority: mediumPriority.satPerVb,
+      lowPriority: lowPriority.satPerVb,
+      noPriority: noPriority.satPerVb,
     );
   }
 
@@ -176,7 +177,7 @@ class BitcoinWalletService implements WalletService {
     _wallet = await Wallet.create(
       descriptor: descriptors.$1,
       changeDescriptor: descriptors.$2,
-      network: Network.Signet,
+      network: Network.signet,
       databaseConfig: const DatabaseConfig
           .memory(), // Txs and UTXOs related to the wallet will be stored in memory
     );
@@ -185,17 +186,17 @@ class BitcoinWalletService implements WalletService {
   Future<(Descriptor receive, Descriptor change)> _getBip84TemplateDescriptors(
     Mnemonic mnemonic,
   ) async {
-    const network = Network.Signet;
+    const network = Network.signet;
     final secretKey =
         await DescriptorSecretKey.create(network: network, mnemonic: mnemonic);
     final receivingDescriptor = await Descriptor.newBip84(
         secretKey: secretKey,
         network: network,
-        keychain: KeychainKind.External);
+        keychain: KeychainKind.externalChain);
     final changeDescriptor = await Descriptor.newBip84(
         secretKey: secretKey,
         network: network,
-        keychain: KeychainKind.Internal);
+        keychain: KeychainKind.internalChain);
 
     return (receivingDescriptor, changeDescriptor);
   }

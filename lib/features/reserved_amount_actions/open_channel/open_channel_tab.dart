@@ -90,12 +90,16 @@ class OpenChannelTabState extends State<OpenChannelTab> {
               ? null
               : () => _controller.confirm().then(
                     (_) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Channel opening successful.'),
-                        ),
-                      );
-                      Navigator.pop(context);
+                      if (_state.channelId != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Channel with id ${_state.channelId} opened.',
+                            ),
+                          ),
+                        );
+                        Navigator.pop(context);
+                      }
                     },
                   ),
           label: const Text('Make instantly spendable'),

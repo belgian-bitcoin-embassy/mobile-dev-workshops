@@ -31,9 +31,9 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   bdk_flutter: 5d2579914d90aaaf964b24b1344946c7668915ea
-  Flutter: f04841e97a9d0b0a8025694d0796dd46242b2854
+  Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   flutter_secure_storage: 23fc622d89d073675f2eaa109381aefbcf5a49be
-  ldk_node: 5043b6dd6fa0dddf2621afed9f8aa60a48493c5e
+  ldk_node: 46de990c54f2b3669d094b941ae40d9f09e28c6c
   path_provider_foundation: 3784922295ac71e43754bd15e0653ccfd36a147c
 
 PODFILE CHECKSUM: 7be2f5f74864d463a8ad433546ed1de7e0f29aef

@@ -44,19 +44,24 @@ class OpenChannelController {
     final state = _getState();
     _updateState(state.copyWith(isOpeningChannel: true));
     try {
-      await _walletService.openChannel(
+      final channelId = await _walletService.openChannel(
         host: state.host!,
         port: state.port!,
         nodeId: state.nodeId!,
         channelAmountSat: state.channelAmountSat!,
         announceChannel: state.announceChannel!,
       );
+      _updateState(state.copyWith(
+        channelId: channelId,
+        isOpeningChannel: false,
+      ));
     } catch (e) {
       print(e);
-      _updateState(
-          state.copyWith(error: FailedToOpenChannelError(e.toString())));
+      _updateState(state.copyWith(
+        error: FailedToOpenChannelError(e.toString()),
+        isOpeningChannel: false,
+      ));
     }
-    _updateState(state.copyWith(isOpeningChannel: false));
   }
 }
 

@@ -11,6 +11,7 @@ class OpenChannelState extends Equatable {
     this.announceChannel,
     this.isOpeningChannel = false,
     this.error,
+    this.channelId,
   });
 
   final String? host;
@@ -20,6 +21,7 @@ class OpenChannelState extends Equatable {
   final bool? announceChannel;
   final bool isOpeningChannel;
   final Exception? error;
+  final String? channelId;
 
   OpenChannelState copyWith({
     String? host,
@@ -31,6 +33,7 @@ class OpenChannelState extends Equatable {
     bool? isOpeningChannel,
     Exception? error,
     bool? clearError,
+    String? channelId,
   }) {
     return OpenChannelState(
       host: host ?? this.host,
@@ -42,6 +45,7 @@ class OpenChannelState extends Equatable {
       announceChannel: announceChannel ?? this.announceChannel,
       isOpeningChannel: isOpeningChannel ?? this.isOpeningChannel,
       error: clearError == true ? null : error ?? this.error,
+      channelId: channelId ?? this.channelId,
     );
   }
 
@@ -54,5 +58,6 @@ class OpenChannelState extends Equatable {
         announceChannel,
         isOpeningChannel,
         error,
+        channelId,
       ];
 }
