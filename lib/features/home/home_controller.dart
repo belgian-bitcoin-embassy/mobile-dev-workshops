@@ -94,25 +94,23 @@ class HomeController {
   Future<void> refresh() async {
     try {
       final state = _getState();
-      for (int i = 0; i < _walletServices.length; i++) {
-        final walletService = _walletServices[i];
-        if (walletService.hasWallet) {
-          await walletService.sync();
-          final balance = await walletService.getSpendableBalanceSat();
-          _updateState(
-            state.copyWith(
-              walletBalances: state.walletBalances
-                ..[i] = WalletBalanceViewModel(
-                  walletType: state.walletBalances[i].walletType,
-                  balanceSat: balance,
-                ),
-              transactionLists: state.transactionLists
-                ..[i] = await _getTransactions(walletService),
-              reservedAmountsLists: state.reservedAmountsLists
-                ..[i] = await _getReservedAmounts(walletService),
-            ),
-          );
-        }
+      final walletService = _walletServices[state.walletIndex];
+      if (walletService.hasWallet) {
+        await walletService.sync();
+        final balance = await walletService.getSpendableBalanceSat();
+        _updateState(
+          state.copyWith(
+            walletBalances: state.walletBalances
+              ..[state.walletIndex] = WalletBalanceViewModel(
+                walletType: state.walletBalances[state.walletIndex].walletType,
+                balanceSat: balance,
+              ),
+            transactionLists: state.transactionLists
+              ..[state.walletIndex] = await _getTransactions(walletService),
+            reservedAmountsLists: state.reservedAmountsLists
+              ..[state.walletIndex] = await _getReservedAmounts(walletService),
+          ),
+        );
       }
     } catch (e) {
       print(e);

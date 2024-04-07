@@ -7,6 +7,7 @@ import 'package:mobile_dev_workshops/repositories/mnemonic_repository.dart';
 import 'package:mobile_dev_workshops/services/wallets/wallet_service.dart';
 import 'package:ldk_node/ldk_node.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:convert/convert.dart';
 
 class LightningWalletService implements WalletService {
   final WalletType _walletType = WalletType.lightning;
@@ -24,7 +25,7 @@ class LightningWalletService implements WalletService {
   Future<void> init() async {
     final mnemonic = await _mnemonicRepository.getMnemonic(_walletType.label);
     if (mnemonic != null && mnemonic.isNotEmpty) {
-      await _initialize(Mnemonic(mnemonic));
+      await _initialize(Mnemonic(seedPhrase: mnemonic));
 
       /*print(
         'Lightning node initialized with id: ${(await _node!.nodeId()).hexCode}',
@@ -35,10 +36,12 @@ class LightningWalletService implements WalletService {
   @override
   Future<void> addWallet() async {
     // 1. Use ldk_node's Mnemonic class to generate a new, valid mnemonic
-    final mnemonic = Mnemonic('invalid mnemonic');
+    final mnemonic = Mnemonic(seedPhrase: 'invalid mnemonic');
 
-    // 2. Use the MnemonicRepository to store the mnemonic in the device's
-    //  secure storage with the wallet type label (_walletType.label) as the key.
+    await _mnemonicRepository.setMnemonic(
+      _walletType.label,
+      mnemonic.seedPhrase,
+    );
 
     await _initialize(mnemonic);
 
@@ -55,6 +58,7 @@ class LightningWalletService implements WalletService {
     if (_node != null) {
       await _mnemonicRepository.deleteMnemonic(_walletType.label);
       await _node!.stop();
+      await Future.delayed(const Duration(seconds: 12));
       await _clearCache();
       _node = null;
     }
@@ -71,12 +75,12 @@ class LightningWalletService implements WalletService {
   @override
   Future<int> getSpendableBalanceSat() async {
     if (_node == null) {
-      throw NoWalletException('A Lightning node has to be initialized first!');
+      return 0;
     }
 
-    // 6. Get all channels of the node and sum the usable channels' outbound capacity
+    // 5. Get the balances of the node
 
-    // 7. Return the balance in sats
+    // 6. Return the total lightning balance
     return 0;
   }
 
@@ -90,20 +94,31 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 8. Based on an amount of sats being passed or not, generate a bolt11 invoice
+    // 7. Based on an amount of sats being passed or not, generate a bolt11 invoice
     //  to receive a fixed amount or a variable amount of sats.
 
-    // 9. As a fallback, also generate a new on-chain address to receive funds
+    // 8. As a fallback, also generate a new on-chain address to receive funds
     //  in case the sender doesn't support Lightning payments.
 
-    // 10. Return the bitcoin address and the bolt11 invoice
+    // 9. Return the bitcoin address and the bolt11 invoice
     return ('invalid Bitcoin address', 'invalid bolt11 invoice');
   }
 
-  Future<int> get totalOnChainBalanceSat => _node!.totalOnchainBalanceSats();
+  Future<int> get totalOnChainBalanceSat async {
+    if (_node == null) {
+      return 0;
+    }
+    final balances = await _node!.listBalances();
+    return balances.totalOnchainBalanceSats;
+  }
 
-  Future<int> get spendableOnChainBalanceSat =>
-      _node!.spendableOnchainBalanceSats();
+  Future<int> get spendableOnChainBalanceSat async {
+    if (_node == null) {
+      return 0;
+    }
+    final balances = await _node!.listBalances();
+    return balances.spendableOnchainBalanceSats;
+  }
 
   Future<String> drainOnChainFunds(String address) async {
     if (_node == null) {
@@ -126,7 +141,7 @@ class LightningWalletService implements WalletService {
     return tx.hash;
   }
 
-  Future<void> openChannel({
+  Future<String> openChannel({
     required String host,
     required int port,
     required String nodeId,
@@ -137,7 +152,10 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 11. Connect to a node and open a new channel.
+    // 10. Connect to a node and open a new channel.
+
+    // 11. Return the channel id as a hex string
+    return hex.encode([]);
   }
 
   @override
@@ -156,7 +174,7 @@ class LightningWalletService implements WalletService {
     //  If the amount is specified, suppose the invoice is a zero-amount invoice and specify the amount when sending the payment.
 
     // 13. Return the payment hash as a hex string
-    return _convertU8Array32ToHex([]);
+    return '0x';
   }
 
   @override
@@ -172,7 +190,7 @@ class LightningWalletService implements WalletService {
   }
 
   Future<void> _initialize(Mnemonic mnemonic) async {
-    // 3. To create a Lightning Node instance, ldk_node provides a Builder class.
+    // 2. To create a Lightning Node instance, ldk_node provides a Builder class.
     //  Configure a Builder class instance by setting
     //    - the mnemonic as the entropy to create the node's wallet/keys from
     //    - the storage directory path to `_nodePath`,
@@ -180,10 +198,10 @@ class LightningWalletService implements WalletService {
     //    - the Esplora server URL to `https://mutinynet.com/api/`
     //    - a listening addresses to 0.0.0.0:9735
 
-    // 4. Build the node from the builder and assign it to the `_node` variable
+    // 3. Build the node from the builder and assign it to the `_node` variable
     //  so it can be used in the rest of the class.
 
-    // 5. Start the node
+    // 4. Start the node
   }
 
   Future<String> get _nodePath async {
@@ -197,10 +215,9 @@ class LightningWalletService implements WalletService {
       await directory.delete(recursive: true);
     }
   }
+}
 
-  String _convertU8Array32ToHex(List<int> u8Array32) {
-    return u8Array32
-        .map((byte) => byte.toRadixString(16).padLeft(2, '0'))
-        .join();
-  }
+extension U8Array32X on U8Array32 {
+  String get hexCode =>
+      map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
 }

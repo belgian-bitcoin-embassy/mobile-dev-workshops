@@ -10,14 +10,13 @@ Future<void> addWallet() async {
   // 1. Use ldk_node's Mnemonic class to generate a new, valid mnemonic
   final mnemonic = await Mnemonic.generate();
 
-  // 2. Use the MnemonicRepository to store the mnemonic in the device's
-  //  secure storage with the wallet type label (_walletType.label) as the key.
   await _mnemonicRepository.setMnemonic(
     _walletType.label,
     mnemonic.seedPhrase,
   );
 
   await _initialize(mnemonic);
+
   print(
     'Lightning Node added with node id: ${(await _node!.nodeId()).hexCode}',
   );
@@ -28,29 +27,24 @@ Future<void> addWallet() async {
 
 ```dart
 Future<void> _initialize(Mnemonic mnemonic) async {
-  // 3. To create a Lightning Node instance, ldk_node provides a Builder class.
+  // 2. To create a Lightning Node instance, ldk_node provides a Builder class.
   //  Configure a Builder class instance by setting
   //    - the mnemonic as the entropy to create the node's wallet/keys from
   //    - the storage directory path to `_nodePath`,
-  //    - the network to Signet,
+  //    - the network to signet,
   //    - the Esplora server URL to `https://mutinynet.com/api/`
   //    - a listening addresses to 0.0.0.0:9735
   final builder = Builder()
-      .setEntropyBip39Mnemonic(mnemonic: mnemonic)
-      .setStorageDirPath(await _nodePath)
-      .setNetwork(Network.Signet)
-      .setEsploraServer(
-        'https://mutinynet.com/api/',
-      )
-      .setListeningAddresses(
-    [
-      const SocketAddress.hostname(addr: "0.0.0.0", port: 9735),
-    ],
-  );
-  // 4. Build the node from the builder and assign it to the `_node` variable
+        .setEntropyBip39Mnemonic(mnemonic: mnemonic)
+        .setStorageDirPath(await _nodePath)
+        .setNetwork(Network.signet)
+        .setEsploraServer('https://mutinynet.com/api/')
+        .setListeningAddresses(
+            [const SocketAddress.hostname(addr: '0.0.0.0', port: 9735)]);
+  // 3. Build the node from the builder and assign it to the `_node` variable
   //  so it can be used in the rest of the class.
   _node = await builder.build();
-  // 5. Start the node
+  // 4. Start the node
   await _node!.start();
 }
 ```
@@ -64,15 +58,11 @@ Future<int> getSpendableBalanceSat() async {
     throw NoWalletException('A Lightning node has to be initialized first!');
   }
 
-  // 6. Get all channels of the node and sum the usable channels' outbound capacity
-  final channels = await _node!.listChannels();
-  final balanceMsat = channels.fold(
-    0,
-    (sum, channel) =>
-        channel.isUsable ? sum + channel.outboundCapacityMsat : sum,
-  );
-  // 7. Return the balance in sats
-  return balanceMsat ~/ 1000;
+  // 5. Get the balances of the node
+  final balances = await _node!.listBalances();
+
+  // 6. Return the total lightning balance
+  return balances.totalLightningBalanceSats;
 }
 ```
 
@@ -89,29 +79,27 @@ Future<(String?, String?)> generateInvoices({
     throw NoWalletException('A Lightning node has to be initialized first!');
   }
 
-  // 8. Based on an amount of sats being passed or not, generate a bolt11 invoice
+  // 7. Based on an amount of sats being passed or not, generate a bolt11 invoice
   //  to receive a fixed amount or a variable amount of sats.
   final Bolt11Invoice bolt11;
   if (amountSat == null) {
-    final nodeId = await _node!.nodeId();
     bolt11 = await _node!.receiveVariableAmountPayment(
-      nodeId: nodeId,
       expirySecs: expirySecs,
       description: description,
     );
   } else {
     bolt11 = await _node!.receivePayment(
-      amountMsat: amountSat,
+      amountMsat: amountSat * 1000,
       expirySecs: expirySecs,
       description: description,
     );
   }
 
-  // 9. As a fallback, also generate a new on-chain address to receive funds
+  // 8. As a fallback, also generate a new on-chain address to receive funds
   //  in case the sender doesn't support Lightning payments.
   final bitcoinAddress = await _node!.newOnchainAddress();
 
-  // 10. Return the bitcoin address and the bolt11 invoice
+  // 9. Return the bitcoin address and the bolt11 invoice
   return (bitcoinAddress.s, bolt11.signedRawInvoice);
 }
 ```
@@ -126,21 +114,24 @@ Future<void> openChannel({
     required int channelAmountSat,
     bool announceChannel = false,
 }) async {
-    if (_node == null) {
-        throw NoWalletException('A Lightning node has to be initialized first!');
-    }
+  if (_node == null) {
+      throw NoWalletException('A Lightning node has to be initialized first!');
+  }
 
-    // 11. Connect to a node and open a new channel.
-    return _node!.connectOpenChannel(
-        netaddress: SocketAddress.hostname(addr: host, port: port),
-        nodeId: PublicKey(
-        hexCode: nodeId,
-        ),
-        channelAmountSats: channelAmountSat,
-        announceChannel: announceChannel,
-        channelConfig: null,
-        pushToCounterpartyMsat: null,
-    );
+  // 10. Connect to a node and open a new channel.
+  final channelId = await _node!.connectOpenChannel(
+    address: SocketAddress.hostname(addr: host, port: port),
+    nodeId: PublicKey(
+      hexCode: nodeId,
+    ),
+    channelAmountSats: channelAmountSat,
+    announceChannel: announceChannel,
+    channelConfig: null,
+    pushToCounterpartyMsat: null,
+  );
+
+  // 11. Return the channel id as a hex string
+  return hex.encode(channelId.data);
 }
 ```
 
@@ -175,7 +166,7 @@ Future<String> pay(
         );
 
   // 13. Return the payment hash as a hex string
-  return _convertU8Array32ToHex(hash.data);
+  return hash.data.hexCode;
 }
 ```
 
@@ -193,15 +184,15 @@ Future<List<TransactionEntity>> getTransactions() async {
 
   // 15. Filter the payments to only include successful ones and return them as a list of `TransactionEntity` instances.
   return payments
-      .where((payment) => payment.status == PaymentStatus.Succeeded)
+      .where((payment) => payment.status == PaymentStatus.succeeded)
       .map((payment) {
       return TransactionEntity(
-      id: _convertU8Array32ToHex(payment.hash.data),
-      receivedAmountSat: payment.direction == PaymentDirection.Inbound &&
+      id: payment.hash.data.hexCode,
+      receivedAmountSat: payment.direction == PaymentDirection.inbound &&
               payment.amountMsat != null
           ? payment.amountMsat! ~/ 1000
           : 0,
-      sentAmountSat: payment.direction == PaymentDirection.Outbound &&
+      sentAmountSat: payment.direction == PaymentDirection.outbound &&
               payment.amountMsat != null
           ? payment.amountMsat! ~/ 1000
           : 0,
