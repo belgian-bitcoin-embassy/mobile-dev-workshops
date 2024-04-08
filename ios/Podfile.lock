@@ -1,10 +1,10 @@
 PODS:
-  - bdk_flutter (0.30.0):
+  - bdk_flutter (0.31.1-dev):
     - Flutter
   - Flutter (1.0.0)
   - flutter_secure_storage (6.0.0):
     - Flutter
-  - ldk_node (0.2.1):
+  - ldk_node (0.2.2-dev):
     - Flutter
   - path_provider_foundation (0.0.1):
     - Flutter
@@ -30,10 +30,10 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
 
 SPEC CHECKSUMS:
-  bdk_flutter: 5d2579914d90aaaf964b24b1344946c7668915ea
+  bdk_flutter: bce16f1bbf87507504700caacf6f37c43d3c8b44
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   flutter_secure_storage: 23fc622d89d073675f2eaa109381aefbcf5a49be
-  ldk_node: 46de990c54f2b3669d094b941ae40d9f09e28c6c
+  ldk_node: 5b3cacf9e7a5d5ae0d5c24e133af5c37c3da338b
   path_provider_foundation: 3784922295ac71e43754bd15e0653ccfd36a147c
 
 PODFILE CHECKSUM: 7be2f5f74864d463a8ad433546ed1de7e0f29aef
