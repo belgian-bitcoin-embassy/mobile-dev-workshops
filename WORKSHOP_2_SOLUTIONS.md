@@ -109,7 +109,7 @@ Future<(String?, String?)> generateInvoices({
 ### Open a channel
 
 ```dart
-Future<void> openChannel({
+Future<String> openChannel({
     required String host,
     required int port,
     required String nodeId,
