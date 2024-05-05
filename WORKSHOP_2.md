@@ -4,6 +4,14 @@ The second workshop focuses on functionalities of a basic Lightning Network node
 
 ## Starting point
 
+### Get the code
+
+Checkout the `workshop-2` branch of this repository to get the starting point for this workshop:
+
+```bash
+git checkout workshop-2
+```
+
 ### Head start
 
 To implement a complete app including UI components, state management, controllers, repositories etc. we would need a lot more time and it would take us too far from the Lightning Network and `ldk_node` specific code. Therefore you get a head start. All needed widgets, screens, entities, view_models, repositories, controllers and state classes are already implemented and ready for you.
