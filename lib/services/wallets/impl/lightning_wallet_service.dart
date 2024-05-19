@@ -27,15 +27,14 @@ class LightningWalletService implements WalletService {
     if (mnemonic != null && mnemonic.isNotEmpty) {
       await _initialize(Mnemonic(seedPhrase: mnemonic));
 
-      /*print(
+      print(
         'Lightning node initialized with id: ${(await _node!.nodeId()).hexCode}',
-      );*/
+      );
     }
   }
 
   @override
   Future<void> addWallet() async {
-    // 1. Use ldk_node's Mnemonic class to generate a new, valid mnemonic
     final mnemonic = await Mnemonic.generate();
 
     print('Generated mnemonic: ${mnemonic.seedPhrase}');
@@ -72,6 +71,14 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
     await _node!.syncWallets();
+
+    // The following code is just to check that the Rapid Gossip Sync is working
+    final status = await _node!.status();
+    print(
+      'Latest Rapid Gossip Sync timestamp: ${status.latestRgsSnapshotTimestamp}',
+    );
+    final logsFile = File('${await _nodePath}/logs/ldk_node_latest.log');
+    print(await logsFile.readAsString());
   }
 
   @override
@@ -80,11 +87,27 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 5. Get the balances of the node
     final balances = await _node!.listBalances();
 
-    // 6. Return the total lightning balance
     return balances.totalLightningBalanceSats;
+  }
+
+  Future<int> get inboundLiquiditySat async {
+    if (_node == null) {
+      return 0;
+    }
+
+    // 3. Get the total inbound liquidity in satoshis by summing up the inbound
+    //  capacity of all channels that are usable and return it in satoshis.
+    final usableChannels = (await _node!.listChannels()).where(
+      (channel) => channel.isUsable,
+    );
+    final inboundCapacityMsat = usableChannels.fold(
+      0,
+      (sum, channel) => sum + channel.inboundCapacityMsat,
+    );
+
+    return inboundCapacityMsat ~/ 1000;
   }
 
   @override
@@ -97,15 +120,16 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 7. Based on an amount of sats being passed or not, generate a bolt11 invoice
-    //  to receive a fixed amount or a variable amount of sats.
     final Bolt11Invoice bolt11;
     if (amountSat == null) {
+      // 4. Change to receive via a JIT channel when no amount is specified
       bolt11 = await _node!.receiveVariableAmountPayment(
         expirySecs: expirySecs,
         description: description,
       );
     } else {
+      // 5. Check the inbound liquidity and request a JIT channel if needed
+      //  otherwise receive the payment as usual.
       bolt11 = await _node!.receivePayment(
         amountMsat: amountSat * 1000,
         expirySecs: expirySecs,
@@ -113,11 +137,8 @@ class LightningWalletService implements WalletService {
       );
     }
 
-    // 8. As a fallback, also generate a new on-chain address to receive funds
-    //  in case the sender doesn't support Lightning payments.
     final bitcoinAddress = await _node!.newOnchainAddress();
 
-    // 9. Return the bitcoin address and the bolt11 invoice
     return (bitcoinAddress.s, bolt11.signedRawInvoice);
   }
 
@@ -169,7 +190,6 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 10. Connect to a node and open a new channel.
     final channelId = await _node!.connectOpenChannel(
       address: SocketAddress.hostname(addr: host, port: port),
       nodeId: PublicKey(
@@ -181,7 +201,6 @@ class LightningWalletService implements WalletService {
       pushToCounterpartyMsat: null,
     );
 
-    // 11. Return the channel id as a hex string
     return hex.encode(channelId.data);
   }
 
@@ -196,9 +215,6 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 12. Use the node to send a payment.
-    //  If the amount is not specified, suppose it is embeded in the invoice.
-    //  If the amount is specified, suppose the invoice is a zero-amount invoice and specify the amount when sending the payment.
     final hash = amountSat == null
         ? await _node!.sendPayment(
             invoice: Bolt11Invoice(
@@ -212,7 +228,6 @@ class LightningWalletService implements WalletService {
             amountMsat: amountSat * 1000,
           );
 
-    // 13. Return the payment hash as a hex string
     return hash.data.hexCode;
   }
 
@@ -222,10 +237,8 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 14. Get all payments of the node
     final payments = await _node!.listPayments();
 
-    // 15. Filter the payments to only include successful ones and return them as a list of `TransactionEntity` instances.
     return payments
         .where((payment) => payment.status == PaymentStatus.succeeded)
         .map((payment) {
@@ -245,30 +258,43 @@ class LightningWalletService implements WalletService {
   }
 
   Future<void> _initialize(Mnemonic mnemonic) async {
-    // 2. To create a Lightning Node instance, ldk_node provides a Builder class.
-    //  Configure a Builder class instance by setting
-    //    - the mnemonic as the entropy to create the node's wallet/keys from
-    //    - the storage directory path to `_nodePath`,
-    //    - the network to signet,
-    //    - the Esplora server URL to `https://mutinynet.com/api/`
-    //    - a listening addresses to 0.0.0.0:9735
+    // 1. Add the following url as the Rapid Gossip Sync server url to source
+    //  the network graph data from: https://rgs.mutinynet.com/snapshot/
+    // 2. Add the following LSP to be able to request LSPS2 JIT channels:
+    //  Node Pubkey: 0371d6fd7d75de2d0372d03ea00e8bacdacb50c27d0eaea0a76a0622eff1f5ef2b
+    //  Node Address: 44.219.111.31:39735
+    //  Access token: JZWN9YLW
     final builder = Builder()
         .setEntropyBip39Mnemonic(mnemonic: mnemonic)
         .setStorageDirPath(await _nodePath)
         .setNetwork(Network.signet)
         .setEsploraServer('https://mutinynet.com/api/')
         .setListeningAddresses(
-            [const SocketAddress.hostname(addr: '0.0.0.0', port: 9735)]);
-    // 3. Build the node from the builder and assign it to the `_node` variable
-    //  so it can be used in the rest of the class.
+          [
+            const SocketAddress.hostname(addr: '0.0.0.0', port: 9735),
+          ],
+        )
+        .setGossipSourceRgs('https://rgs.mutinynet.com/snapshot')
+        .setLiquiditySourceLsps2(
+          address: const SocketAddress.hostname(
+            addr: '44.219.111.31',
+            port: 39735,
+          ),
+          publicKey: const PublicKey(
+            hexCode:
+                '0371d6fd7d75de2d0372d03ea00e8bacdacb50c27d0eaea0a76a0622eff1f5ef2b',
+          ),
+          //token: 'JZWN9YLW',
+        );
+
     _node = await builder.build();
-    // 4. Start the node
+
     await _node!.start();
   }
 
   Future<String> get _nodePath async {
     final directory = await getApplicationDocumentsDirectory();
-    return "${directory.path}/ldk_cache/";
+    return "${directory.path}/ldk_cache";
   }
 
   Future<void> _clearCache() async {
