@@ -99,15 +99,7 @@ class LightningWalletService implements WalletService {
 
     // 3. Get the total inbound liquidity in satoshis by summing up the inbound
     //  capacity of all channels that are usable and return it in satoshis.
-    final usableChannels = (await _node!.listChannels()).where(
-      (channel) => channel.isUsable,
-    );
-    final inboundCapacityMsat = usableChannels.fold(
-      0,
-      (sum, channel) => sum + channel.inboundCapacityMsat,
-    );
-
-    return inboundCapacityMsat ~/ 1000;
+    return 0;
   }
 
   @override
@@ -259,7 +251,7 @@ class LightningWalletService implements WalletService {
 
   Future<void> _initialize(Mnemonic mnemonic) async {
     // 1. Add the following url as the Rapid Gossip Sync server url to source
-    //  the network graph data from: https://rgs.mutinynet.com/snapshot/
+    //  the network graph data from: https://mutinynet.ltbl.io/snapshot/
     // 2. Add the following LSP to be able to request LSPS2 JIT channels:
     //  Node Pubkey: 0371d6fd7d75de2d0372d03ea00e8bacdacb50c27d0eaea0a76a0622eff1f5ef2b
     //  Node Address: 44.219.111.31:39735
@@ -268,24 +260,12 @@ class LightningWalletService implements WalletService {
         .setEntropyBip39Mnemonic(mnemonic: mnemonic)
         .setStorageDirPath(await _nodePath)
         .setNetwork(Network.signet)
-        .setEsploraServer('https://mutinynet.com/api/')
+        .setEsploraServer('https://mutinynet.ltbl.io/api/')
         .setListeningAddresses(
-          [
-            const SocketAddress.hostname(addr: '0.0.0.0', port: 9735),
-          ],
-        )
-        .setGossipSourceRgs('https://rgs.mutinynet.com/snapshot')
-        .setLiquiditySourceLsps2(
-          address: const SocketAddress.hostname(
-            addr: '44.219.111.31',
-            port: 39735,
-          ),
-          publicKey: const PublicKey(
-            hexCode:
-                '0371d6fd7d75de2d0372d03ea00e8bacdacb50c27d0eaea0a76a0622eff1f5ef2b',
-          ),
-          //token: 'JZWN9YLW',
-        );
+      [
+        const SocketAddress.hostname(addr: '0.0.0.0', port: 9735),
+      ],
+    );
 
     _node = await builder.build();
 

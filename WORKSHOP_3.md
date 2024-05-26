@@ -1,6 +1,6 @@
 # Workshop 3
 
-In this third workshop we will integrate with a [Lightning Service Provider (LSP)](https://bitcoin.design/guide/how-it-works/lightning-services/) to take some of the burden to manage channels off of the user and enable receiving Lightning payments even without having inbound liquidity yet. We will also check some other services that can improve the user experience of a mobile Lightning node.
+In this third workshop we will add a Rapid Gossip Sync server and integrate with a [Lightning Service Provider (LSP)](https://bitcoin.design/guide/how-it-works/lightning-services/) to take some of the burden to open channels off of the user and enable receiving Lightning payments even without having inbound liquidity yet. We will also check some other services that can improve the user experience of a mobile Lightning node.
 
 ## Starting point
 
