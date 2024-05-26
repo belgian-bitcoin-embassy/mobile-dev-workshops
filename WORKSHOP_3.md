@@ -45,7 +45,7 @@ This can take a couple of minutes, which on a mobile phone, where the app and th
 
 One solution that is applied by some mobile Lightning Network node wallets today is not having the gossip data on the device, but instead offloading the calculation of routing payments to a server. This approach however has some downsides, like privacy concerns, since the server will know all the payments of its users, and the need to trust the server to not manipulate the route calculation.
 
-A better solution is to use a Rapid Gossip Sync server. This server serves a compact snapshot of the gossip network that can be used to bootstrap a node. This way the node can directly start with a recent snapshot of the gossip network and calculate routes itself, without the need to pass payment recipient information to a server.
+A better solution is to use a Rapid Gossip Sync server. This server serves a compact snapshot of the gossip network that can be used to bootstrap a node. This way the node can directly start with a recent snapshot of the network graph and calculate routes itself, without the need to pass payment recipient information to a server.
 
 To learn more about Rapid Gossip Sync and its intricacies, check out the [docs](https://lightningdevkit.org/blog/announcing-rapid-gossip-sync/).
 
@@ -53,16 +53,16 @@ LDK Node already has all the Rapid Gossip Sync client functionality implemented 
 
 We just need to use it in our app by configuring the url of the Rapid Gossip Sync server we want to use in the `LightningWalletService` class. There are a couple of LSPs that provide Rapid Gossip Sync servers. Here are some examples for different networks you can use for development:
 
-- https://rgs.mutinynet.com/snapshot/ for the Mutinynet Signet
+- https://mutinynet.ltbl.io/snapshot for the Mutinynet Signet
 - https://testnet.ltbl.io/snapshot for Testnet
 - https://rapidsync.lightningdevkit.org/snapshot for Mainnet
 
-Now add the url of the network you want to use to node builder in `_initialize` function of the `LightningWalletService` class:
+Now add the url of the network you want to use to the node builder in the `_initialize` function of the `LightningWalletService` class:
 
 ```dart
 Future<void> _initialize(Mnemonic mnemonic) async {
     // 1. Add the following url as the Rapid Gossip Sync server url to source
-    //  the network graph data from: https://rgs.mutinynet.com/snapshot/
+    //  the network graph data from: https://mutinynet.ltbl.io/snapshot
     final builder = Builder()
         .setEntropyBip39Mnemonic(mnemonic: mnemonic)
         .setStorageDirPath(await _nodePath)
@@ -85,7 +85,7 @@ A latest sync timestamp should be printed in the console after the sync is done.
 
 ### JIT channels with LSPS2
 
-The next feature we will implement is the Just-In-Time (JIT) channels with LSPS2. This feature allows a wallet to receive a Lightning payment without having inbound liquidity yet. The LSP will open a zero-conf channel when it receives a payment for the wallet and pass the payment to through this channel. So the channel is created just in time when it is needed as the name suggests. A fee is generally deducted from the amount by the LSP for this service.
+The next feature we will implement is the Just-In-Time (JIT) channels with LSPS2. This feature allows a wallet to receive a Lightning payment without having inbound liquidity yet. The LSP will open a zero-conf channel when a payment for the wallet reaches the node of the LSP and pass the payment through this channel. So the channel is created just in time when it is needed as the name suggests. A fee is generally deducted from the amount by the LSP for this service.
 
 Various Liquidity Service Providers and Lightning wallets and developers are working on an open standard for this feature called [LSPS2](https://github.com/BitcoinAndLightningLayerSpecs/lsp/tree/main/LSPS2). Having a standard for this feature will make it easier for wallets to integrate with different LSPs and for LSPs to provide this service to different wallets, without the need for custom integrations for each wallet-LSP pair. This gives users more choice and competition in the market.
 
@@ -93,7 +93,7 @@ LDK Node already has the LSPS2 client functionality implemented and we can again
 
 #### Set the LSPS2 Liquidity Source
 
-To configure the LSPS2 compatible LSP you want to use, you need to know the public key/node id and the address of the Lightning Node of the LSP. Possibly an access token is also needed to use an LSP. You can get this information from the LSP you want to use.
+To configure the LSPS2 compatible LSP you want to use, you need to know the public key/node id and the address of the Lightning Node of the LSP. Possibly an access token is also needed to use an LSP and get specific quotes or liquidity capacity. You can get this information from the LSP you want to use.
 
 For example, the following is the info of a node of the [C= (C equals)](https://cequals.xyz/) LSP on Mutinynet:
 
@@ -113,13 +113,13 @@ Future<void> _initialize(Mnemonic mnemonic) async {
         .setEntropyBip39Mnemonic(mnemonic: mnemonic)
         .setStorageDirPath(await _nodePath)
         .setNetwork(Network.signet)
-        .setEsploraServer('https://mutinynet.com/api/')
+        .setEsploraServer('https://mutinynet.ltbl.io/api')
         .setListeningAddresses(
           [
             const SocketAddress.hostname(addr: '0.0.0.0', port: 9735),
           ],
         )
-        .setGossipSourceRgs('https://rgs.mutinynet.com/snapshot');
+        .setGossipSourceRgs('https://mutinynet.ltbl.io/snapshot');
 
     _node = await builder.build();
 

@@ -251,7 +251,7 @@ class LightningWalletService implements WalletService {
 
   Future<void> _initialize(Mnemonic mnemonic) async {
     // 1. Add the following url as the Rapid Gossip Sync server url to source
-    //  the network graph data from: https://mutinynet.ltbl.io/snapshot/
+    //  the network graph data from: https://mutinynet.ltbl.io/snapshot
     // 2. Add the following LSP to be able to request LSPS2 JIT channels:
     //  Node Pubkey: 0371d6fd7d75de2d0372d03ea00e8bacdacb50c27d0eaea0a76a0622eff1f5ef2b
     //  Node Address: 44.219.111.31:39735
@@ -260,7 +260,7 @@ class LightningWalletService implements WalletService {
         .setEntropyBip39Mnemonic(mnemonic: mnemonic)
         .setStorageDirPath(await _nodePath)
         .setNetwork(Network.signet)
-        .setEsploraServer('https://mutinynet.ltbl.io/api/')
+        .setEsploraServer('https://mutinynet.ltbl.io/api')
         .setListeningAddresses(
       [
         const SocketAddress.hostname(addr: '0.0.0.0', port: 9735),

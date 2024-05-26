@@ -12,13 +12,13 @@ Future<void> _initialize(Mnemonic mnemonic) async {
         .setEntropyBip39Mnemonic(mnemonic: mnemonic)
         .setStorageDirPath(await _nodePath)
         .setNetwork(Network.signet)
-        .setEsploraServer('https://mutinynet.com/api/')
+        .setEsploraServer('https://mutinynet.ltbl.io/api')
         .setListeningAddresses(
           [
             const SocketAddress.hostname(addr: '0.0.0.0', port: 9735),
           ],
         )
-        .setGossipSourceRgs('https://rgs.mutinynet.com/snapshot');
+        .setGossipSourceRgs('https://mutinynet.ltbl.io/snapshot');
 
     _node = await builder.build();
 
@@ -40,13 +40,13 @@ Future<void> _initialize(Mnemonic mnemonic) async {
         .setEntropyBip39Mnemonic(mnemonic: mnemonic)
         .setStorageDirPath(await _nodePath)
         .setNetwork(Network.signet)
-        .setEsploraServer('https://mutinynet.com/api/')
+        .setEsploraServer('https://mutinynet.ltbl.io/api')
         .setListeningAddresses(
           [
             const SocketAddress.hostname(addr: '0.0.0.0', port: 9735),
           ],
         )
-        .setGossipSourceRgs('https://rgs.mutinynet.com/snapshot')
+        .setGossipSourceRgs('https://mutinynet.ltbl.io/snapshot')
         .setLiquiditySourceLsps2(
           address: const SocketAddress.hostname(
             addr: '44.228.24.253',
@@ -56,7 +56,7 @@ Future<void> _initialize(Mnemonic mnemonic) async {
             hexCode:
                 '025804d4431ad05b06a1a1ee41f22fefeb8ce800b0be3a92ff3b9f594a263da34e',
           ),
-          //token: 'JZWN9YLW',
+          token: 'JZWN9YLW',
         );
 
     _node = await builder.build();
