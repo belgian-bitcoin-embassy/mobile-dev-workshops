@@ -159,34 +159,39 @@ Now we can change the `generateInvoices` function to request JIT channels from t
 ```dart
 @override
 Future<(String?, String?)> generateInvoices({
-    int? amountSat,
-    int expirySecs = 3600 * 24, // Default to 1 day
-    String description = 'BBE Workshop',
+  int? amountSat,
+  int expirySecs = 3600 * 24, // Default to 1 day
+  String description = 'BBE Workshop',
 }) async {
-    if (_node == null) {
-      throw NoWalletException('A Lightning node has to be initialized first!');
-    }
+  if (_node == null) {
+    throw NoWalletException('A Lightning node has to be initialized first!');
+  }
 
-    final Bolt11Invoice bolt11;
+  Bolt11Invoice? bolt11;
+  try {
     if (amountSat == null) {
-        // 4. Change to receive via a JIT channel when no amount is specified
-        bolt11 = await _node!.receiveVariableAmountPayment(
-            expirySecs: expirySecs,
-            description: description,
-        );
+      // 4. Change to receive via a JIT channel when no amount is specified
+      bolt11 = await _node!.receiveVariableAmountPayment(
+        expirySecs: expirySecs,
+        description: description,
+      );
     } else {
-        // 5. Check the inbound liquidity and request a JIT channel if needed
-        //  otherwise receive the payment as usual.
-        bolt11 = await _node!.receivePayment(
-            amountMsat: amountSat * 1000,
-            expirySecs: expirySecs,
-            description: description,
-        );
+      // 5. Check the inbound liquidity and request a JIT channel if needed
+      //  otherwise receive the payment as usual.
+      bolt11 = await _node!.receivePayment(
+        amountMsat: amountSat * 1000,
+        expirySecs: expirySecs,
+        description: description,
+      );
     }
+  } catch (e) {
+    final errorMessage = 'Failed to generate invoice: $e';
+    print(errorMessage);
+  }
 
-    final bitcoinAddress = await _node!.newOnchainAddress();
+  final bitcoinAddress = await _node!.newOnchainAddress();
 
-    return (bitcoinAddress.s, bolt11.signedRawInvoice);
+  return (bitcoinAddress.s, bolt11 == null ? '' : bolt11.signedRawInvoice);
 }
 ```
 

@@ -106,33 +106,38 @@ Future<(String?, String?)> generateInvoices({
         throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    final Bolt11Invoice bolt11;
-    if (amountSat == null) {
-        // 4. Change to receive via a JIT channel when no amount is specified
-        bolt11 = await _node!.receiveVariableAmountPaymentViaJitChannel(
-            expirySecs: expirySecs,
-            description: description,
-        );
-    } else {
-        // 5. Check the inbound liquidity and request a JIT channel if needed
-        //  otherwise receive the payment as usual.
-        if (await inboundLiquiditySat < amountSat) {
-            bolt11 = await _node!.receivePaymentViaJitChannel(
-                amountMsat: amountSat * 1000,
-                expirySecs: expirySecs,
-                description: description,
-            );
-        } else {
-            bolt11 = await _node!.receivePayment(
-                amountMsat: amountSat * 1000,
-                expirySecs: expirySecs,
-                description: description,
-            );
-        }
+    Bolt11Invoice? bolt11;
+    try {
+      if (amountSat == null) {
+          // 4. Change to receive via a JIT channel when no amount is specified
+          bolt11 = await _node!.receiveVariableAmountPaymentViaJitChannel(
+              expirySecs: expirySecs,
+              description: description,
+          );
+      } else {
+          // 5. Check the inbound liquidity and request a JIT channel if needed
+          //  otherwise receive the payment as usual.
+          if (await inboundLiquiditySat < amountSat) {
+              bolt11 = await _node!.receivePaymentViaJitChannel(
+                  amountMsat: amountSat * 1000,
+                  expirySecs: expirySecs,
+                  description: description,
+              );
+          } else {
+              bolt11 = await _node!.receivePayment(
+                  amountMsat: amountSat * 1000,
+                  expirySecs: expirySecs,
+                  description: description,
+              );
+          }
+      }
+    } catch (e) {
+      final errorMessage = 'Failed to generate invoice: $e';
+      print(errorMessage);
     }
 
     final bitcoinAddress = await _node!.newOnchainAddress();
 
-    return (bitcoinAddress.s, bolt11.signedRawInvoice);
+    return (bitcoinAddress.s, bolt11 == null ? '' : bolt11.signedRawInvoice);
 }
 ```
