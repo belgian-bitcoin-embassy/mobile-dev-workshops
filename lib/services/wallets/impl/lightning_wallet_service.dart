@@ -27,16 +27,15 @@ class LightningWalletService implements WalletService {
     if (mnemonic != null && mnemonic.isNotEmpty) {
       await _initialize(Mnemonic(seedPhrase: mnemonic));
 
-      /*print(
+      print(
         'Lightning node initialized with id: ${(await _node!.nodeId()).hexCode}',
-      );*/
+      );
     }
   }
 
   @override
   Future<void> addWallet() async {
-    // 1. Use ldk_node's Mnemonic class to generate a new, valid mnemonic
-    final mnemonic = Mnemonic(seedPhrase: 'invalid mnemonic');
+    final mnemonic = await Mnemonic.generate();
 
     print('Generated mnemonic: ${mnemonic.seedPhrase}');
 
@@ -47,9 +46,9 @@ class LightningWalletService implements WalletService {
 
     await _initialize(mnemonic);
 
-    /*print(
+    print(
       'Lightning Node added with node id: ${(await _node!.nodeId()).hexCode}',
-    );*/
+    );
   }
 
   @override
@@ -72,17 +71,29 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
     await _node!.syncWallets();
+
+    await _printRgsTimestamp();
+    await _printLogs();
   }
 
   @override
   Future<int> getSpendableBalanceSat() async {
     if (_node == null) {
+      throw NoWalletException('A Lightning node has to be initialized first!');
+    }
+
+    final balances = await _node!.listBalances();
+
+    return balances.totalLightningBalanceSats;
+  }
+
+  Future<int> get inboundLiquiditySat async {
+    if (_node == null) {
       return 0;
     }
 
-    // 5. Get the balances of the node
-
-    // 6. Return the total lightning balance
+    // 3. Get the total inbound liquidity in satoshis by summing up the inbound
+    //  capacity of all channels that are usable and return it in satoshis.
     return 0;
   }
 
@@ -96,14 +107,31 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 7. Based on an amount of sats being passed or not, generate a bolt11 invoice
-    //  to receive a fixed amount or a variable amount of sats.
+    Bolt11Invoice? bolt11;
+    try {
+      if (amountSat == null) {
+        // 4. Change to receive via a JIT channel when no amount is specified
+        bolt11 = await _node!.receiveVariableAmountPayment(
+          expirySecs: expirySecs,
+          description: description,
+        );
+      } else {
+        // 5. Check the inbound liquidity and request a JIT channel if needed
+        //  otherwise receive the payment as usual.
+        bolt11 = await _node!.receivePayment(
+          amountMsat: amountSat * 1000,
+          expirySecs: expirySecs,
+          description: description,
+        );
+      }
+    } catch (e) {
+      final errorMessage = 'Failed to generate invoice: $e';
+      print(errorMessage);
+    }
 
-    // 8. As a fallback, also generate a new on-chain address to receive funds
-    //  in case the sender doesn't support Lightning payments.
+    final bitcoinAddress = await _node!.newOnchainAddress();
 
-    // 9. Return the bitcoin address and the bolt11 invoice
-    return ('invalid Bitcoin address', 'invalid bolt11 invoice');
+    return (bitcoinAddress.s, bolt11 == null ? '' : bolt11.signedRawInvoice);
   }
 
   Future<int> get totalOnChainBalanceSat async {
@@ -154,10 +182,18 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 10. Connect to a node and open a new channel.
+    final channelId = await _node!.connectOpenChannel(
+      address: SocketAddress.hostname(addr: host, port: port),
+      nodeId: PublicKey(
+        hexCode: nodeId,
+      ),
+      channelAmountSats: channelAmountSat,
+      announceChannel: announceChannel,
+      channelConfig: null,
+      pushToCounterpartyMsat: null,
+    );
 
-    // 11. Return the channel id as a hex string
-    return hex.encode([]);
+    return hex.encode(channelId.data);
   }
 
   @override
@@ -171,12 +207,20 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 12. Use the node to send a payment.
-    //  If the amount is not specified, suppose it is embeded in the invoice.
-    //  If the amount is specified, suppose the invoice is a zero-amount invoice and specify the amount when sending the payment.
+    final hash = amountSat == null
+        ? await _node!.sendPayment(
+            invoice: Bolt11Invoice(
+              signedRawInvoice: invoice,
+            ),
+          )
+        : await _node!.sendPaymentUsingAmount(
+            invoice: Bolt11Invoice(
+              signedRawInvoice: invoice,
+            ),
+            amountMsat: amountSat * 1000,
+          );
 
-    // 13. Return the payment hash as a hex string
-    return '0x';
+    return hash.data.hexCode;
   }
 
   @override
@@ -185,30 +229,55 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    // 14. Get all payments of the node
+    final payments = await _node!.listPayments();
 
-    // 15. Filter the payments to only include successful ones and return them as a list of `TransactionEntity` instances.
-    return [];
+    return payments
+        .where((payment) => payment.status == PaymentStatus.succeeded)
+        .map((payment) {
+      return TransactionEntity(
+        id: payment.hash.data.hexCode,
+        receivedAmountSat: payment.direction == PaymentDirection.inbound &&
+                payment.amountMsat != null
+            ? payment.amountMsat! ~/ 1000
+            : 0,
+        sentAmountSat: payment.direction == PaymentDirection.outbound &&
+                payment.amountMsat != null
+            ? payment.amountMsat! ~/ 1000
+            : 0,
+        timestamp: null,
+      );
+    }).toList();
   }
 
   Future<void> _initialize(Mnemonic mnemonic) async {
-    // 2. To create a Lightning Node instance, ldk_node provides a Builder class.
-    //  Configure a Builder class instance by setting
-    //    - the mnemonic as the entropy to create the node's wallet/keys from
-    //    - the storage directory path to `_nodePath`,
-    //    - the network to Signet,
-    //    - the Esplora server URL to `https://mutinynet.com/api/`
-    //    - a listening addresses to 0.0.0.0:9735
+    // 1. Add the following url as the Rapid Gossip Sync server url to source
+    //  the network graph data from: https://mutinynet.ltbl.io/snapshot
+    // 2. Add the following LSP to be able to request LSPS2 JIT channels:
+    //  Node Pubkey: 0371d6fd7d75de2d0372d03ea00e8bacdacb50c27d0eaea0a76a0622eff1f5ef2b
+    //  Node Address: 44.219.111.31:39735
+    //  Access token: JZWN9YLW
+    final builder = Builder()
+        .setEntropyBip39Mnemonic(mnemonic: mnemonic)
+        .setStorageDirPath(await _nodePath)
+        .setNetwork(Network.signet)
+        .setEsploraServer('https://mutinynet.ltbl.io/api')
+        .setListeningAddresses(
+      [
+        const SocketAddress.hostname(addr: '0.0.0.0', port: 9735),
+      ],
+    );
 
-    // 3. Build the node from the builder and assign it to the `_node` variable
-    //  so it can be used in the rest of the class.
+    _node = await builder.build();
 
-    // 4. Start the node
+    await _node!.start();
+
+    await _printRgsTimestamp();
+    await _printLogs();
   }
 
   Future<String> get _nodePath async {
     final directory = await getApplicationDocumentsDirectory();
-    return "${directory.path}/ldk_cache/";
+    return "${directory.path}/ldk_cache";
   }
 
   Future<void> _clearCache() async {
@@ -216,6 +285,28 @@ class LightningWalletService implements WalletService {
     if (await directory.exists()) {
       await directory.delete(recursive: true);
     }
+  }
+
+  Future<void> _printLogs() async {
+    final logsFile = File('${await _nodePath}/logs/ldk_node_latest.log');
+    String contents = await logsFile.readAsString();
+
+    // Define the maximum length of each chunk to be printed
+    const int chunkSize = 1024;
+
+    // Split the contents into chunks and print each chunk
+    for (int i = 0; i < contents.length; i += chunkSize) {
+      int end =
+          (i + chunkSize < contents.length) ? i + chunkSize : contents.length;
+      print(contents.substring(i, end));
+    }
+  }
+
+  Future<void> _printRgsTimestamp() async {
+    final status = await _node!.status();
+    print(
+      'Latest Rapid Gossip Sync timestamp: ${status.latestRgsSnapshotTimestamp}',
+    );
   }
 }
 
