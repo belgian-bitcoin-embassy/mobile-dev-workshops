@@ -23,6 +23,9 @@ Future<void> _initialize(Mnemonic mnemonic) async {
     _node = await builder.build();
 
     await _node!.start();
+
+    await _printRgsTimestamp();
+    await _printLogs();
 }
 ```
 
@@ -62,6 +65,9 @@ Future<void> _initialize(Mnemonic mnemonic) async {
     _node = await builder.build();
 
     await _node!.start();
+
+    await _printRgsTimestamp();
+    await _printLogs();
 }
 ```
 

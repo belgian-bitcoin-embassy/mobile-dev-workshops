@@ -167,7 +167,7 @@ class BitcoinWalletService implements WalletService {
     _blockchain = await Blockchain.create(
       config: const BlockchainConfig.esplora(
         config: EsploraConfig(
-          baseUrl: 'https://mutinynet.com/api/',
+          baseUrl: 'https://mutinynet.ltbl.io/api',
           stopGap: 10,
         ),
       ),

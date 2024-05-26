@@ -72,13 +72,8 @@ class LightningWalletService implements WalletService {
     }
     await _node!.syncWallets();
 
-    // The following code is just to check that the Rapid Gossip Sync is working
-    final status = await _node!.status();
-    print(
-      'Latest Rapid Gossip Sync timestamp: ${status.latestRgsSnapshotTimestamp}',
-    );
-    final logsFile = File('${await _nodePath}/logs/ldk_node_latest.log');
-    print(await logsFile.readAsString());
+    await _printRgsTimestamp();
+    await _printLogs();
   }
 
   @override
@@ -270,6 +265,9 @@ class LightningWalletService implements WalletService {
     _node = await builder.build();
 
     await _node!.start();
+
+    await _printRgsTimestamp();
+    await _printLogs();
   }
 
   Future<String> get _nodePath async {
@@ -282,6 +280,28 @@ class LightningWalletService implements WalletService {
     if (await directory.exists()) {
       await directory.delete(recursive: true);
     }
+  }
+
+  Future<void> _printLogs() async {
+    final logsFile = File('${await _nodePath}/logs/ldk_node_latest.log');
+    String contents = await logsFile.readAsString();
+
+    // Define the maximum length of each chunk to be printed
+    const int chunkSize = 1024;
+
+    // Split the contents into chunks and print each chunk
+    for (int i = 0; i < contents.length; i += chunkSize) {
+      int end =
+          (i + chunkSize < contents.length) ? i + chunkSize : contents.length;
+      print(contents.substring(i, end));
+    }
+  }
+
+  Future<void> _printRgsTimestamp() async {
+    final status = await _node!.status();
+    print(
+      'Latest Rapid Gossip Sync timestamp: ${status.latestRgsSnapshotTimestamp}',
+    );
   }
 }
 

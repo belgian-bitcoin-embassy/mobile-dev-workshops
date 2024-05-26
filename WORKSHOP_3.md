@@ -67,7 +67,7 @@ Future<void> _initialize(Mnemonic mnemonic) async {
         .setEntropyBip39Mnemonic(mnemonic: mnemonic)
         .setStorageDirPath(await _nodePath)
         .setNetwork(Network.signet)
-        .setEsploraServer('https://mutinynet.com/api/')
+        .setEsploraServer('https://mutinynet.ltbl.io/api')
         .setListeningAddresses(
           [
             const SocketAddress.hostname(addr: '0.0.0.0', port: 9735),
@@ -77,6 +77,9 @@ Future<void> _initialize(Mnemonic mnemonic) async {
     _node = await builder.build();
 
     await _node!.start();
+
+    await _printRgsTimestamp();
+    await _printLogs();
 }
 ```
 
@@ -124,6 +127,9 @@ Future<void> _initialize(Mnemonic mnemonic) async {
     _node = await builder.build();
 
     await _node!.start();
+
+    await _printRgsTimestamp();
+    await _printLogs();
 }
 ```
 
