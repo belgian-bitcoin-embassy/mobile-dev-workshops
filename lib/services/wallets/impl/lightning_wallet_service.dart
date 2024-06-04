@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:bolt11_decoder/bolt11_decoder.dart';
 import 'package:mobile_dev_workshops/entities/transaction_entity.dart';
 import 'package:mobile_dev_workshops/enums/wallet_type.dart';
 import 'package:mobile_dev_workshops/repositories/mnemonic_repository.dart';
 import 'package:mobile_dev_workshops/services/wallets/wallet_service.dart';
 import 'package:ldk_node/ldk_node.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:convert/convert.dart';
 
 class LightningWalletService implements WalletService {
   final WalletType _walletType = WalletType.lightning;
@@ -28,7 +28,7 @@ class LightningWalletService implements WalletService {
       await _initialize(Mnemonic(seedPhrase: mnemonic));
 
       print(
-        'Lightning node initialized with id: ${(await _node!.nodeId()).hexCode}',
+        'Lightning node initialized with id: ${(await _node!.nodeId()).hex}',
       );
     }
   }
@@ -47,7 +47,7 @@ class LightningWalletService implements WalletService {
     await _initialize(mnemonic);
 
     print(
-      'Lightning Node added with node id: ${(await _node!.nodeId()).hexCode}',
+      'Lightning Node added with node id: ${(await _node!.nodeId()).hex}',
     );
   }
 
@@ -72,7 +72,6 @@ class LightningWalletService implements WalletService {
     }
     await _node!.syncWallets();
 
-    await _printRgsTimestamp();
     await _printLogs();
   }
 
@@ -82,9 +81,14 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    final balances = await _node!.listBalances();
+    final usableChannels =
+        (await _node!.listChannels()).where((channel) => channel.isUsable);
+    final outboundCapacityMsat = usableChannels.fold(
+      0,
+      (sum, channel) => sum + channel.outboundCapacityMsat,
+    );
 
-    return balances.totalLightningBalanceSats;
+    return outboundCapacityMsat ~/ 1000;
   }
 
   Future<int> get inboundLiquiditySat async {
@@ -94,7 +98,14 @@ class LightningWalletService implements WalletService {
 
     // 3. Get the total inbound liquidity in satoshis by summing up the inbound
     //  capacity of all channels that are usable and return it in satoshis.
-    return 0;
+    final usableChannels =
+        (await _node!.listChannels()).where((channel) => channel.isUsable);
+    final inboundCapacityMsat = usableChannels.fold(
+      0,
+      (sum, channel) => sum + channel.inboundCapacityMsat,
+    );
+
+    return inboundCapacityMsat ~/ 1000;
   }
 
   @override
@@ -107,18 +118,16 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
+    Bolt11Payment bolt11Payment = await _node!.bolt11Payment();
     Bolt11Invoice? bolt11;
     try {
       if (amountSat == null) {
-        // 4. Change to receive via a JIT channel when no amount is specified
-        bolt11 = await _node!.receiveVariableAmountPayment(
+        bolt11 = await bolt11Payment.receiveVariableAmountViaJitChannel(
           expirySecs: expirySecs,
           description: description,
         );
       } else {
-        // 5. Check the inbound liquidity and request a JIT channel if needed
-        //  otherwise receive the payment as usual.
-        bolt11 = await _node!.receivePayment(
+        bolt11 = await bolt11Payment.receiveViaJitChannel(
           amountMsat: amountSat * 1000,
           expirySecs: expirySecs,
           description: description,
@@ -129,7 +138,11 @@ class LightningWalletService implements WalletService {
       print(errorMessage);
     }
 
-    final bitcoinAddress = await _node!.newOnchainAddress();
+    final onChainPayment = await _node!.onChainPayment();
+    final bitcoinAddress = await onChainPayment.newAddress();
+
+    print('Generated invoice: ${bolt11?.signedRawInvoice}');
+    print('Generated address: ${bitcoinAddress.s}');
 
     return (bitcoinAddress.s, bolt11 == null ? '' : bolt11.signedRawInvoice);
   }
@@ -138,6 +151,7 @@ class LightningWalletService implements WalletService {
     if (_node == null) {
       return 0;
     }
+
     final balances = await _node!.listBalances();
     return balances.totalOnchainBalanceSats;
   }
@@ -146,6 +160,7 @@ class LightningWalletService implements WalletService {
     if (_node == null) {
       return 0;
     }
+
     final balances = await _node!.listBalances();
     return balances.spendableOnchainBalanceSats;
   }
@@ -155,8 +170,9 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
+    final onChainPayment = await _node!.onChainPayment();
     final tx =
-        await _node!.sendAllToOnchainAddress(address: Address(s: address));
+        await onChainPayment.sendAllToAddress(address: Address(s: address));
     return tx.hash;
   }
 
@@ -164,14 +180,16 @@ class LightningWalletService implements WalletService {
     if (_node == null) {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
-    final tx = await _node!.sendToOnchainAddress(
+
+    final onChainPayment = await _node!.onChainPayment();
+    final tx = await onChainPayment.sendToAddress(
       address: Address(s: address),
       amountSats: amountSat,
     );
     return tx.hash;
   }
 
-  Future<String> openChannel({
+  Future<void> openChannel({
     required String host,
     required int port,
     required String nodeId,
@@ -182,18 +200,16 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
-    final channelId = await _node!.connectOpenChannel(
-      address: SocketAddress.hostname(addr: host, port: port),
+    await _node!.connectOpenChannel(
+      socketAddress: SocketAddress.hostname(addr: host, port: port),
       nodeId: PublicKey(
-        hexCode: nodeId,
+        hex: nodeId,
       ),
       channelAmountSats: channelAmountSat,
       announceChannel: announceChannel,
       channelConfig: null,
       pushToCounterpartyMsat: null,
     );
-
-    return hex.encode(channelId.data);
   }
 
   @override
@@ -207,20 +223,21 @@ class LightningWalletService implements WalletService {
       throw NoWalletException('A Lightning node has to be initialized first!');
     }
 
+    final bolt11Payment = await _node!.bolt11Payment();
     final hash = amountSat == null
-        ? await _node!.sendPayment(
+        ? await bolt11Payment.send(
             invoice: Bolt11Invoice(
               signedRawInvoice: invoice,
             ),
           )
-        : await _node!.sendPaymentUsingAmount(
+        : await bolt11Payment.sendUsingAmount(
             invoice: Bolt11Invoice(
               signedRawInvoice: invoice,
             ),
             amountMsat: amountSat * 1000,
           );
 
-    return hash.data.hexCode;
+    return hash.field0.toString();
   }
 
   @override
@@ -235,7 +252,7 @@ class LightningWalletService implements WalletService {
         .where((payment) => payment.status == PaymentStatus.succeeded)
         .map((payment) {
       return TransactionEntity(
-        id: payment.hash.data.hexCode,
+        id: payment.id.field0.toString(),
         receivedAmountSat: payment.direction == PaymentDirection.inbound &&
                 payment.amountMsat != null
             ? payment.amountMsat! ~/ 1000
@@ -262,16 +279,23 @@ class LightningWalletService implements WalletService {
         .setNetwork(Network.signet)
         .setEsploraServer('https://mutinynet.ltbl.io/api')
         .setListeningAddresses(
-      [
-        const SocketAddress.hostname(addr: '0.0.0.0', port: 9735),
-      ],
-    );
+          [
+            const SocketAddress.hostname(addr: '0.0.0.0', port: 9735),
+          ],
+        )
+        .setGossipSourceRgs('https://mutinynet.ltbl.io/snapshot')
+        .setLiquiditySourceLsps2(
+          address:
+              const SocketAddress.hostname(addr: '44.219.111.31', port: 39735),
+          publicKey: const PublicKey(
+              hex:
+                  '0371d6fd7d75de2d0372d03ea00e8bacdacb50c27d0eaea0a76a0622eff1f5ef2b'),
+          token: 'JZWN9YLW',
+        );
 
     _node = await builder.build();
 
     await _node!.start();
-
-    await _printRgsTimestamp();
     await _printLogs();
   }
 
@@ -301,16 +325,9 @@ class LightningWalletService implements WalletService {
       print(contents.substring(i, end));
     }
   }
-
-  Future<void> _printRgsTimestamp() async {
-    final status = await _node!.status();
-    print(
-      'Latest Rapid Gossip Sync timestamp: ${status.latestRgsSnapshotTimestamp}',
-    );
-  }
 }
 
-extension U8Array32X on U8Array32 {
+/*extension U8Array32X on U8Array32 {
   String get hexCode =>
       map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
-}
+}*/

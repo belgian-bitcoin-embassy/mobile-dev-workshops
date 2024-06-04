@@ -41,10 +41,11 @@ dependencies:
   bdk_flutter: ^0.31.1-dev
   ldk_node:
     git:
-      url: https://github.com/kumulynja/ldk-node-flutter
-      ref: main
+      url: https://github.com/LtbLightning/ldk-node-flutter
+      ref: lsp-version
   path_provider: ^2.1.2
   convert: ^3.1.1
+  bolt11_decoder: ^1.0.2
 
 dev_dependencies:
   flutter_test:

@@ -92,7 +92,7 @@ class BitcoinWalletService implements WalletService {
       addressIndex: const AddressIndex.increase(),
     );
 
-    return (invoice.address, null);
+    return (await invoice.address.asString(), null);
   }
 
   @override
